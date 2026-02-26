@@ -24,7 +24,7 @@
   },
 
   "rough_volatility_calibration": {
-    "title": "Volatility Modeling and Calibration - \"Volatility is Rough\" - supervised by Pr. Eduardo Abi Jaber",
+    "title": "Rough Volatility Calibration - supervised by Pr. Eduardo Abi Jaber",
     "bullets": [
       "Implemented a rough volatility model based on the article \"Volatility is Rough\".",
       "Calibrated the model to implied volatility surfaces and analyzed roughness effects."
@@ -34,7 +34,7 @@
   "options_trading_market_making_akuna": {
     "title": "Options Trading and Market Making Foundations - Akuna Capital",
     "bullets": [
-      "Applied option pricing intuition, Greeks, hedging and P&L dynamics on listed derivatives.",
+      "Implemented option pricing intuition, Greeks, hedging and P&L dynamics on listed derivatives.",
       "Analyzed market making logic, spreads, risk management and volatility exposure."
     ]
   },
