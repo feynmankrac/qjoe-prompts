@@ -1,0 +1,16 @@
+{
+  "asian_pde_pricing": {
+    "role_families": ["PRICING"],
+    "asset_classes": ["EQUITIES"],
+    "signals": ["DERIVATIVES_PRICING_CORE"],
+    "tools": ["Python"],
+    "intensity": 8
+  },
+  "fx_execution_ml": {
+    "role_families": ["DATA_SCIENCE"],
+    "asset_classes": ["FX"],
+    "signals": ["EXECUTION_ALGO_EXPOSURE", "BUILDING_INTERNAL_TOOLS"],
+    "tools": ["Python"],
+    "intensity": 7
+  }
+}
