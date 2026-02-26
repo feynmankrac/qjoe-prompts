@@ -1,0 +1,470 @@
+%------------------------------------------------------------------------------
+% CV in Latex
+% Author : Charles Rambo
+% Based off of: https://github.com/sb2nov/resume and Jake's Resume on Overleaf
+% Most recently updated version may be found at https://github.com/fizixmastr 
+% License : MIT
+%------------------------------------------------------------------------------
+
+\documentclass[A4,11pt]{article}
+\usepackage[paper=a4paper,hmargin=2cm,vmargin=0cm]{geometry}
+%\documentclass[letterpaper,11pt]{article} %For use in US
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{tikz}
+\input{glyphtounicode}
+\usepackage{hyperref}
+\thispagestyle{empty}
+\usepackage{fontawesome}
+
+
+\begin{comment}
+no comment
+\end{comment}
+
+
+%-----FONT OPTIONS-------------------------------------------------------------
+\begin{comment}
+no comment
+\end{comment}
+
+
+% serif
+ \usepackage{palatino}
+% \usepackage{times} %This is the default as well
+% \usepackage{charter}
+
+% sans-serif
+% \usepackage{helvet}
+% \usepackage[sfdefault]{noto-sans}
+% \usepackage[default]{sourcesanspro}
+
+%-----PAGE SETUP---------------------------------------------------------------
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-1cm}
+\addtolength{\evensidemargin}{-1cm}
+\addtolength{\textwidth}{2cm}
+\addtolength{\topmargin}{-1cm}
+\addtolength{\textheight}{2cm}
+
+% Margins for US Letter size
+%\addtolength{\oddsidemargin}{-0.5in}
+%\addtolength{\evensidemargin}{-0.5in}
+%\addtolength{\textwidth}{1in}
+%\addtolength{\topmargin}{-.5in}
+%\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0cm}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Ensure that .pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-----CUSTOM COMMANDS FOR FORMATTING SECTIONS----------------------------------
+\newcommand{\CVItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\CVSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \small#3 & \small #4 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\CVSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \text{\small#1} & \text{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\CVSubItem}[1]{\CVItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\CVSubHeadingListStart}{\begin{itemize}[leftmargin=0.5cm, label={}]}
+% \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]} % Uncomment for US
+\newcommand{\CVSubHeadingListEnd}{\end{itemize}}
+\newcommand{\CVItemListStart}{\begin{itemize}}
+\newcommand{\CVItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%------------------------------------------------------------------------------
+% CV STARTS HERE  %
+%------------------------------------------------------------------------------
+\begin{document}
+
+%-----HEADING------------------------------------------------------------------
+\begin{comment}
+no comment
+\end{comment}
+
+\begin{minipage}[c]{0.05\textwidth}
+\-\
+\end{minipage}
+%\begin{minipage}[c]{0.2\textwidth}
+%\begin{tikzpicture}
+    %\clip (0,0) circle (1.75cm);
+    %\node at (0,-.2) {\includegraphics[width = 4cm]{pp.jpg}}; 
+    % if necessary the picture may be moved by changing the at (coordinates)
+    % width defines the 'zoom' of the picture
+%\end{tikzpicture}
+%\hfill\vline\hfill
+%\end{minipage}
+\begin{center}
+    {\Huge \textbf{\scshape Ely Henry}}\\
+    \vspace{4pt}
+    %\small +33 6 16 70 29 16 \\
+    %\href{mailto:Henry.Lebesgues@gmail.com}{\underline{Henry.Lebesgues@gmail.com}}\\
+    %\small \textit{Disponible immédiatement – Mobilité internationale (VIE)} \\
+    henry.lebesgues@gmail.com
+    $\vert$ +33 6 16 70 29 16 
+    $\vert$ linkedin.com/in/ely-henry
+    $\vert$ github.com/feynmankrac \\
+    \vspace{8pt}
+% === CV_TITLE_START ===
+    {\Huge \textbf{TITLEPLACEHOLDER}} \\
+% === CV_TITLE_END ===
+    \vspace{6pt}
+    \small
+    \parbox{0.9\textwidth}{
+    \centering
+%Eligible for the VIE program: under 29, Master’s degree holder, French citizen.
+    }
+\end{center}
+
+
+
+%-----EDUCATION----------------------------------------------------------------
+\section{Education}
+\CVSubHeadingListStart
+
+\CVSubheading
+      {{Master 2 MMMEF - Sorbonne Univerisity}}{}
+      % {{Master 2 MMMEF - Panthéon Sorbonne}}{ 2020 -- 2022}
+      {Master’s degree in Modelization and Mathematical Methods on Economy and Finance}{}
+      
+   \CVSubheading
+      {{Master 2 IRFA - Sorbonne University}}{}
+      {Master’s degree in Risk Engineering in Finance and Insurance}{}
+      %\CVItemListStart
+      %\CVItem{Market risk measures: \textbf{Stress tests, Value-at-Risk (VaR), Expected Shortfall}}
+        %\CVItem{ \textbf{Derivatives pricing, Algorithmic trading}}
+        %\CVItem{Machine learning}
+     %\CVItemListEnd
+
+    
+
+      %\CVSubheading
+  %{Licence MIASHS + M1 MAEF - Panthéon Sorbonne}{}
+  %{Licence MIASHS + M1 MAEF - Panthéon Sorbonne}{ 2015 -- 2020}
+  %{Applied Mathematics and Informatics in Economy and Finance}{}
+
+  \CVSubHeadingListEnd
+
+%-----WORK EXPERIENCE----------------------------------------------------------
+
+\section{Work Experience}
+
+  \CVSubHeadingListStart
+  
+\CVSubheading
+  {Actuarial Research Associate – Actense}{Sept. 2024 -- Aug. 2025}
+  {}{}
+  \vspace{-18pt}
+  \CVItemListStart
+    \CVItem{Calibrated actuarial risk indicators using Python and Excel/VBA.}
+    \CVItem{Built automated analysis and data quality control tools to support risk monitoring.}
+    \CVItem{Ensured regulatory compliance through structured validation and reporting processes.}
+  \CVItemListEnd
+
+
+  
+\CVSubheading
+  {Physical Commodities Operations \& Trading Support – VP Company, Mauritius}{2023–2024}{}{}
+\vspace{-18pt}
+\CVItemListStart
+\CVItem{Managed sourcing and pricing of agricultural commodities.}
+\CVItem{Negotiated prices and optimized costs across the physical commodity supply chain.}
+\CVItem{Managed exposure to commodity price and logistics constraints.}
+\CVItemListEnd
+
+   %\CVSubheading
+    %  {Tutorat de mathématiques - Panthéon-Sorbonne}{2019-2021}
+     % {Tutorat pour les étudiants de 1er année de MIASHS}{}   
+
+\CVSubheading
+  {Quantitative Finance Research - Pantheon Sorbonne - supervised by Prof. Etienne Koehler}{}{}{}
+\vspace{-15pt}
+\CVItemListStart
+\vspace{-5pt}
+\CVItem{Developed and implemented ZCB options under the Vasicek model.}
+\CVItem{Calibrated model parameters, performed Monte Carlo simulations, and analyzed sensitivity.}
+\CVItem{Academic supervision by an Inspector at the Banque de France.}
+
+\CVItemListEnd
+
+\CVSubheading
+  {Quant IT Intern – CHAINVEST}{}{}{}
+  \vspace{-18pt}
+  \CVItemListStart
+    \CVItem{Analyzed fast-growing crypto-asset markets using quantitative indicators and market data.}
+    \CVItem{Evaluated the performance of systematic trading strategies and summarized results in research reports.}
+    \CVItem{Developed \textbf{Python} tools for market data collection, database management and preprocessing.}
+  \CVItemListEnd
+  
+  \CVSubHeadingListEnd
+        %  {Création  d'une plateforme web avec Python Flask pour avoir une interface sur la base de donnée client \\
+      %Revue de la littérature sur les stratégies de trading basée sur du \textbf{machine learning/deep learning}\\
+      %Création d'un reporting sur la performance d'une de nos stratégies de trading.}{}
+
+
+     %\CVSubheading
+       %{Emploi saisonnier }{2015-2021}
+       %{Barman au Café de la paix, employé polyvalent à La Toque Angevine.}{}
+
+
+
+%-----PROJECTS AND RESEARCH----------------------------------------------------
+
+\section{Projects}   
+  \CVSubHeadingListStart
+
+\CVSubheading
+  {Options Trading, Market Making Foundations – Akuna Capital}{}
+  {}{}
+\vspace{-15pt}
+\CVItemListStart
+ \vspace{-5pt}
+  \CVItem{Studied option pricing intuition, Greeks, hedging and P\&L dynamics on listed derivatives}
+  \CVItem{Analyzed market making logic, spreads, risk management and volatility exposure}
+\CVItemListEnd
+  
+\CVSubheading
+  {Spread Options Pricing - Greeks \& Hedging supervised by Prof. \textbf{\href{}{J.Bonnefoy}}}{}{}{}
+\vspace{-15pt}
+\CVItemListStart
+\vspace{-5pt}
+\CVItem{Implemented Monte Carlo and Kirk-based models for spread option pricing}
+\CVItem{Derived sensitivities (Greeks) and analyzed hedging strategies for spread option portfolios}
+
+\CVItemListEnd
+
+  \CVSubheading
+  {Market Risk, Backtesting \& Scenario Analysis}{}
+  {}{}
+\vspace{-15pt}
+\CVItemListStart
+ \vspace{-5pt}
+\CVItem{Implemented VaR and ES using \textbf{historical, parametric, and Monte Carlo} approaches.}
+\CVItem{Assessed robustness, assumptions, and limitations across the different methods.}
+\CVItem{Performed stress testing on the \textbf{Covid-19} period.}
+\CVItemListEnd 
+
+\CVSubheading
+  %{Structured Products Pricing – Exotic \& American Options}{}{}{}
+  {Exotic and American Options Pricing on VBA}{}{}{}
+\CVItemListStart
+  \vspace{-14pt}
+  \CVItem{Implemented \textbf{Monte Carlo} and binomial tree pricing methods.}
+  \CVItem{Calibrated models and analyzed pricing gaps for path-dependent options.}
+\CVItemListEnd
+
+\CVSubHeadingListEnd
+
+\begin{comment}
+
+  \CVSubheading
+  {Leveraged ETF Valuation supervised by Prof. Nicolas Gaussel}{}
+  {}{}
+  \vspace{-15pt}
+  \CVItemListStart
+    \vspace{-5pt}
+    \CVItem{Modeled leveraged ETF valuation and quantified deviations from the underlying index.}
+    \CVItem{Analyzed sensitivity to volatility, rebalancing effects and path-dependence using historical data.}
+  \CVItemListEnd
+
+\CVSubheading
+  {Market Microstructure Analysis - supervised by Pr. Olivier Guéant}{}{}{}
+  %{Algorithmic Trading Project $|$ supervised by Pr. Olivier Guéant}{}{}{}
+\vspace{-15pt}
+\CVItemListStart
+\vspace{-5pt}
+  \CVItem{Implemented algorithmic market making models for equity derivatives.}
+  \CVItem{Simulated order book dynamics and analyzed PnL performance.}
+\CVItemListEnd 
+
+
+
+\CVSubheading
+  {Quantitative Research Job Simulation – JP Morgan Chase on Forage}{}{}{}
+  \vspace{-18pt}
+  \CVItemListStart
+    \CVItem{Completed a simulation focused on quantitative research methods.} 
+    \CVItem{Analyzed a book of loans to estimate a customer's probability of default.}
+    \CVItem{Used dynamic programming to convert FICO scores into categorical data to predict defaults.}
+  \CVItemListEnd
+
+\CVSubheading
+  {Rough Volatility Calibration - supervised by Pr. Eduardo Abi Jaber}{}{}{}
+\vspace{-15pt}
+\CVItemListStart
+\vspace{-5pt}
+  \CVItem{Implemented a rough volatility model based on the article \emph{Volatility is Rough}.}
+  \CVItem{Calibrated the model to implied volatility surfaces and analyzed roughness effects.}
+\CVItemListEnd
+
+
+
+  \CVSubheading
+  {PDE project: Asian Option Pricing
+  $|$ supervised by Pr. Olivier Guéant}{}
+  {}{}
+  \CVItemListStart
+    \vspace{-15pt}
+    \CVItem{Derived PDE formulation for Asian option pricing under stochastic dynamics}
+\CVItem{Implemented finite-difference numerical schemes and analyzed stability and accuracy}
+\CVItem{Compared PDE results with Monte Carlo benchmarks to validate pricing consistency.}
+  \CVItemListEnd
+
+
+  \CVSubheading
+      {Electricity Price Modelling (France \& Germany)}{}
+      {}{}
+      \vspace{-15pt}
+      \CVItemListStart
+        \vspace{-5pt}
+        \CVItem{Built ML models using multi-source alternative datasets.}
+        \CVItem{Monitored performance using Spearman correlation.}
+      \CVItemListEnd
+
+\CVSubheading
+  {Research Project – Quantitative Alpha in Crypto Markets}{}
+  {}{}
+  \vspace{-15pt}
+  \CVItemListStart
+    \vspace{-5pt}
+    \CVItem{Reviewed and implemented alpha signals from the academic paper \emph{Quantitative Alpha in Crypto Markets}.}
+    \CVItem{Backtested long/short BTC–ETH strategies on aggregated historical data}
+  \CVItemListEnd
+
+
+
+  \CVSubheading
+  {Data Challenge – CFM: High-Frequency Market Data Classification}{}
+  {}{}
+\vspace{-15pt}
+\CVItemListStart
+\vspace{-5pt}
+  \CVItem{Engineered features from high-frequency LOB data (24M events).}
+  \CVItem{Applied bi-GRU deep learning models for microstructure signal extraction.}
+\CVItemListEnd
+
+
+
+\CVSubheading
+  {Interest Rate Derivatives Pricing $|$ supervised by Prof. Etienne Koehler}{}{}{}
+\vspace{-15pt}
+\CVItemListStart
+\vspace{-5pt}
+\CVItem{Developed and implemented a pricing framework}
+\CVItem{Calibrated model parameters, performed Monte Carlo simulations, and analyzed sensitivity}
+\CVItemListEnd 
+
+
+
+\CVSubheading
+{\href{https://github.com/feynmankrac}{GitHub – Quantitative finance projects \faGithub}}
+{}{}
+
+
+
+  
+
+  \CVSubheading
+      {Systematic Strategy Research \& Backtesting$|$ Python}{}
+      {}{}
+      \vspace{-15pt}
+      \CVItemListStart
+        \vspace{-5pt}
+        \CVItem{Design and backtesting of quantitative investment strategies using historical market data}
+\CVItem{Portfolio rebalancing logic, performance metrics, and risk analysis}
+\CVItem{Implementation in Python using Pandas and NumPy}
+
+      
+        \CVSubheading
+      {Data challenge - CFM: }{now}
+      {}{}
+      \vspace{-15pt}
+      \CVItemListStart
+       \vspace{-5pt}
+       
+           
+      
+     \CVItem{\href{https://challengedata.ens.fr/participants/challenges/97/}{Tabular regression on futures market data}}
+
+    \CVItem{Modeling of price variations} 
+    \CVItem{Python modeling (XGBoost, Neural Networks)}
+
+    \CVItem{\href{https://challengedata.ens.fr/participants/challenges/146/}{Stock classification based on high-frequency order book data}}
+
+        
+        %\CVItem{\href{https://challengedata.ens.fr/challenges/84}{Prediction of end-of-session returns on the US equity market}}
+        \CVItemListEnd
+
+            %\CVSubheading
+         %{{Data Science Project} $|$ \emph{\small{supervised by Prof. \textbf{\href{linkedin.com/in/bertrandkianhassani}{Bertrand Kian-Hassani}}}}}{December 2024}
+         %{ \ \ \ \ Automation of a financial data preparation pipeline}{}
+                 
+            
+\end{comment}
+ 
+
+%-----SKILLS-------------------------------------------------------------------
+
+\section{Skills}
+  
+\begin{itemize}[leftmargin=0.5cm, label={}]
+  \item[] \small
+    \textbf{Languages} : French, English \\
+    %• English – Advanced level \\
+    %• German, Chinese – Basics \\
+    \vspace{0.4em}
+    \textbf{Programming}: Python, VBA, SQL, R, SAS, C, \LaTeX, Linux \\
+    \vspace{0.4em}
+    \textbf{Skills}: Critical Thinking, Teamwork, Clear Communication, Intellectual Curiosity \\
+\vspace{0.4em}
+\textbf{Certifications}: Bloomberg Market Concepts, Quantitative Research Simulation - JP Morgan Chase \& Co.  \\
+%\textbf{Crypto interest}: Passionate about DeFi innovation — particularly in liquidity optimization and AMM mechanisms
+ \vspace{0.4em}
+ \textbf{Interests}: Running, Football (practice, tactical analysis and modeling)
+
+\end{itemize}
+
+
+
+
+        
+    
+%------------------------------------------------------------------------------
+\end{document}
