@@ -1,3 +1,5 @@
+from typing import Dict
+
 def map_template(job_json: Dict) -> Dict:
     role_family = job_json.get("role_family")
 
