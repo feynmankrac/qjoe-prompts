@@ -1,24 +1,13 @@
-🔧 PROMPT — NORMALIZE_JOB (JSON STRICT)
+NORMALIZE_JOB — JSON STRICT (LOGIC LAYER, v2)
 
-Tu reçois en entrée un JSON valide issu de l’étape EXTRACT_JOB.
+Tu reçois en entrée un JSON valide issu de EXTRACT_JOB v2.
 
-Ta mission :
+Tu dois retourner UNIQUEMENT un JSON valide respectant EXACTEMENT le même schéma.
+Aucun champ supplémentaire.
+Aucun texte hors JSON.
+Aucun markdown.
 
-Normaliser strictement les champs catégoriels
-
-Recalculer quant_intensity de manière déterministe
-
-Remplir red_flags et signals_for_fit selon les règles
-
-Ne jamais inventer d'information
-
-Retourner UNIQUEMENT un JSON valide respectant exactement le même schéma
-
-Ne jamais ajouter de champ
-
-Ne jamais écrire de texte hors JSON
-
-Schéma de sortie (strictement identique) :
+Schéma de sortie (strictement identique)
 
 {
 "company": null,
@@ -47,116 +36,172 @@ Schéma de sortie (strictement identique) :
 "signals_for_fit": []
 }
 
-RÈGLES DE NORMALISATION
+RÈGLES STRUCTURELLES
 
-contract_type ∈ {INTERNSHIP, APPRENTICESHIP, VIE, PERMANENT, TEMP, GRADUATE_PROGRAM, CDD}
+Ne jamais modifier :
+company
+role_title
+location
+remote_policy
+key_missions
+key_requirements
+
+Ne jamais inventer.
+
+Ne jamais ajouter de champ.
+
+Nettoyer doublons dans tools / business_domain / asset_classes si nécessaire.
+
+Tous les enums doivent être forcés dans l’espace fermé ci-dessous.
+
+1️⃣ NORMALISATION DES ENUMS
+contract_type
+
+Doit appartenir à :
+{INTERNSHIP, APPRENTICESHIP, VIE, PERMANENT, TEMP, GRADUATE_PROGRAM, CDD}
+
 Sinon → null
 
-seniority ∈ {INTERN, JUNIOR, ASSOCIATE, SENIOR, UNKNOWN}
+seniority
+
+Si null → UNKNOWN
+
+Doit appartenir à :
+{INTERN, JUNIOR, ASSOCIATE, SENIOR, UNKNOWN}
+
 Sinon → UNKNOWN
 
-role_family ∈ {
-TRADING,
-STRUCTURING,
-PRICING,
-XVA,
-MODEL_RISK,
-MARKET_RISK,
-COUNTERPARTY_RISK,
-P&L_VALUATION,
-FO_TOOLS,
-DATA_SCIENCE,
-PRODUCT_CONTROL,
-ALM,
-COMPLIANCE,
-OPERATIONS,
+role_family
+
+Doit appartenir à :
+
+TRADING
+STRUCTURING
+PRICING
+XVA
+MODEL_RISK
+MARKET_RISK
+COUNTERPARTY_RISK
+P&L_VALUATION
+FO_TOOLS
+DATA_SCIENCE
+PRODUCT_CONTROL
+ALM
+COMPLIANCE
+OPERATIONS
 UNKNOWN
-}
 
-Si ambigu → UNKNOWN
+Si null ou ambigu → UNKNOWN
 
-role_type ∈ {
-FRONT_OFFICE,
-FRONT_SUPPORT,
-MIDDLE_OFFICE,
-CONTROL,
-BACK_OFFICE,
-RESEARCH,
+Ne pas déduire agressivement.
+
+role_type
+
+Doit appartenir à :
+
+FRONT_OFFICE
+FRONT_SUPPORT
+MIDDLE_OFFICE
+CONTROL
+BACK_OFFICE
+RESEARCH
 UNKNOWN
-}
 
-Si ambigu → UNKNOWN
+Si null → UNKNOWN
 
-Ne pas déduire agressivement. Rester conservateur.
+2️⃣ QUANT_INTENSITY (RECALCUL OBLIGATOIRE)
 
-QUANT_INTENSITY (RECALCUL OBLIGATOIRE)
+Ignorer la valeur d’entrée.
+Recalculer entièrement.
 
-Recalculer entièrement. Ne jamais garder la valeur d’entrée.
+Base = 0
 
-base = 0
-
-+3 si mention explicite de :
++3 si mention explicite dans key_missions ou key_requirements de :
 pricing / stochastic / PDE / Monte Carlo / calibration / Greeks / VaR / stress testing / XVA
 
-+2 si Python
++2 si Python dans tools
 +1 si SQL
 +1 si VBA
 +1 si C++
 
-+2 si ML / AI / deep learning
++2 si ML / AI / deep learning mentionné
 
-+2 si production-quality code explicite :
++2 si mention explicite de :
 git / CI / tests / pipelines / performance optimization / refactoring
 
--3 si reporting_heavy = true
+-3 si reporting_heavy == true
 
 Clamp final entre 0 et 10.
 
-RED_FLAGS (remplir automatiquement)
+3️⃣ RED_FLAGS (remplissage automatique)
+
+Réinitialiser red_flags à [] avant calcul.
 
 Ajouter uniquement parmi :
 
-REPORTING → si reporting_heavy=true
-COMPLIANCE_HEAVY → si rôle centré conformité/réglementaire
-OPS_HEAVY → si rôle principalement opérationnel / process
-PHD_ONLY → si quant_research_phd_mandatory=true
-CXX_HARDCORE → si cxx_hardcore=true
-ELIGIBILITY_BLOCKER → si restriction explicite (nationality/final-year/etc.)
-LOW_FO_PROXIMITY → si role_type ∈ {CONTROL,BACK_OFFICE,OPERATIONS}
-ET absence de signaux FO/modelling forts
+REPORTING → si reporting_heavy == true
+COMPLIANCE_HEAVY → si role_family == COMPLIANCE
+OPS_HEAVY → si role_family == OPERATIONS
+PHD_ONLY → si quant_research_phd_mandatory == true
+CXX_HARDCORE → si cxx_hardcore == true
 
-SIGNALS_FOR_FIT (remplir automatiquement)
+LOW_FO_PROXIMITY → si
+role_type ∈ {CONTROL, BACK_OFFICE}
+ET signals_for_fit ne contient aucun signal modelling fort
+(après calcul des signals_for_fit)
+
+4️⃣ SIGNALS_FOR_FIT (remplissage automatique)
+
+Réinitialiser signals_for_fit à [] avant calcul.
 
 Ajouter uniquement parmi :
 
 FRONT_OFFICE_PROXIMITY → si role_type ∈ {FRONT_OFFICE, FRONT_SUPPORT}
-BUILDING_INTERNAL_TOOLS → si outils internes / automation / dev desk tools
-PRODUCTION_CODE_EXPECTED → si prod code mentionné (git/tests/CI/pipelines)
-DERIVATIVES_PRICING_CORE → si derivatives_pricing=true
-MODEL_VALIDATION_CORE → si model_validation=true
-MARKET_RISK_ANALYTICS → si market_risk=true
-COUNTERPARTY_RISK_ANALYTICS → si counterparty_risk=true
-ENERGY_COMMODITIES_EXPOSURE → si energy_derivatives=true
-CRYPTO_EXPOSURE → si crypto explicitement mentionné
-EXECUTION_ALGO_EXPOSURE → si algo execution / trading algo mentionné
-XVA_EXPOSURE → si XVA explicite
 
-Ne rien ajouter si non justifié.
+BUILDING_INTERNAL_TOOLS → si missions mentionnent outils internes / automation / tooling
 
-RÈGLES FINALES
+PRODUCTION_CODE_EXPECTED → si git/tests/CI/pipelines mentionnés
 
-Ne jamais inventer
+DERIVATIVES_PRICING_CORE → si derivatives_pricing == true
 
-Ne jamais modifier company / role_title / missions / requirements
+MODEL_VALIDATION_CORE → si model_validation == true
 
-Ne jamais ajouter de champ
+MARKET_RISK_ANALYTICS → si market_risk == true
 
-Toujours recalculer quant_intensity
+COUNTERPARTY_RISK_ANALYTICS → si counterparty_risk == true
 
-Retourner UNIQUEMENT le JSON final
+ENERGY_COMMODITIES_EXPOSURE → si energy_derivatives == true
 
-Aucun commentaire
+CRYPTO_EXPOSURE → si CRYPTO ∈ asset_classes
 
-Aucun markdown
+EXECUTION_ALGO_EXPOSURE → si execution algorithm / algo trading mentionné
 
-Aucun texte hors JSON
+XVA_EXPOSURE → si XVA mentionné
+
+Ne rien ajouter si non justifié explicitement.
+
+5️⃣ COHÉRENCE INTERNE
+
+red_flags dépend de signals_for_fit.
+
+signals_for_fit dépend des booléens et missions.
+
+quant_intensity dépend uniquement des règles ci-dessus.
+
+Aucune autre logique autorisée.
+
+6️⃣ INTERDICTIONS
+
+Ne jamais modifier tools sauf suppression doublons.
+
+Ne jamais modifier asset_classes sauf nettoyage doublons.
+
+Ne jamais ajouter de nouveaux tags non listés.
+
+Ne jamais inventer.
+
+Ne jamais appliquer logique de scoring global.
+
+Ne jamais décider GREEN/RED ici.
+
+Retourner UNIQUEMENT le JSON final.
