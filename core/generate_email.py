@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict
 
 
@@ -18,7 +19,7 @@ def build_llm_input(job_json: Dict, score_result: Dict, template_result: Dict) -
 
 
 def call_llm(prompt_text: str) -> Dict:
-    raise NotImplementedError("LLM call not implemented yet.")
+    raise NotImplementedError("LLM call not implemented.")
 
 
 def generate_email(
@@ -28,9 +29,15 @@ def generate_email(
     prompt_path: str = "prompts/06_generate_email.md"
 ) -> Dict:
 
+    if os.getenv("LLM_ENABLED", "0") != "1":
+        return {
+            "status": "LLM_DISABLED",
+            "email_subject": None,
+            "email_body": None
+        }
+
     prompt_text = load_prompt(prompt_path)
     llm_input = build_llm_input(job_json, score_result, template_result)
-
     full_prompt = prompt_text + llm_input
 
     response = call_llm(full_prompt)
