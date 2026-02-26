@@ -57,6 +57,7 @@ def compute_score(job_json: Dict) -> Dict:
             ("DATA_SCIENCE+FX+EXECUTION_ALGO_EXPOSURE bonus", 30)
         )
 
+    # Penalties
     if "COMPLIANCE_HEAVY" in red_flags:
         score -= 15
 
@@ -65,6 +66,9 @@ def compute_score(job_json: Dict) -> Dict:
 
     if "LOW_FO_PROXIMITY" in red_flags:
         score -= 10
+
+    if job_json.get("reporting_heavy") is True:
+        score -= 25
 
     score = max(0, min(100, score))
 
