@@ -1,8 +1,7 @@
 from typing import Dict
 
 
-START_MARKER = "% === CV_TITLE_START ==="
-END_MARKER = "% === CV_TITLE_END ==="
+TITLE_TOKEN = "TITLEPLACEHOLDER"
 
 
 def patch_latex_cv(
@@ -10,22 +9,25 @@ def patch_latex_cv(
     output_path: str,
     generated_content: Dict
 ):
-    """
-    Inject dynamic title into CV template.
-    """
 
     with open(template_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    if START_MARKER not in content or END_MARKER not in content:
-        raise ValueError("Title markers not found in template.")
+    if TITLE_TOKEN not in content:
+        raise ValueError("TITLEPLACEHOLDER not found in template.")
 
-    before, rest = content.split(START_MARKER)
-    middle, after = rest.split(END_MARKER)
+    title = generated_content.get("cv_title")
+    if not title:
+        raise ValueError("cv_title missing in generated_content.")
 
-    new_middle = f"\n{START_MARKER}\n{generated_content['cv_title']}\n{END_MARKER}"
+    safe_title = (
+        title.replace("&", r"\&")
+             .replace("%", r"\%")
+             .replace("#", r"\#")
+             .replace("_", r"\_")
+    )
 
-    new_content = before + new_middle + after
+    new_content = content.replace(TITLE_TOKEN, safe_title)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(new_content)
