@@ -1,83 +1,198 @@
-EXTRACT_JOB — JSON STRICT (stable)
+EXTRACT_JOB — JSON STRICT (FACTUAL ONLY, v2)
 
-Tu dois retourner UNIQUEMENT un JSON valide (aucun texte hors JSON, aucun markdown) respectant exactement ce schéma (aucun champ en plus) :
+Tu dois retourner UNIQUEMENT un JSON valide (aucun texte hors JSON, aucun markdown) respectant exactement le schéma ci-dessous (aucun champ en plus).
+
+Objectif :
+Extraire uniquement des informations factuelles explicitement présentes dans l’annonce.
+Ne jamais interpréter stratégiquement.
+Ne jamais scorer.
+Ne jamais normaliser agressivement.
+
+Schéma de sortie (strict)
 
 {
-  "company": null,
-  "role_title": null,
-  "role_family": null,
-  "role_type": null,
-  "seniority": null,
-  "location": null,
-  "remote_policy": null,
-  "contract_type": null,
-  "business_domain": [],
-  "asset_classes": [],
-  "key_missions": [],
-  "key_requirements": [],
-  "model_validation": false,
-  "market_risk": false,
-  "counterparty_risk": false,
-  "derivatives_pricing": false,
-  "energy_derivatives": false,
-  "quant_research_phd_mandatory": false,
-  "cxx_hardcore": false,
-  "reporting_heavy": false,
-  "quant_intensity": 0,
-  "tools": [],
-  "red_flags": [],
-  "signals_for_fit": []
+"company": null,
+"role_title": null,
+"role_family": null,
+"role_type": null,
+"seniority": null,
+"location": null,
+"remote_policy": null,
+"contract_type": null,
+"business_domain": [],
+"asset_classes": [],
+"key_missions": [],
+"key_requirements": [],
+"model_validation": false,
+"market_risk": false,
+"counterparty_risk": false,
+"derivatives_pricing": false,
+"energy_derivatives": false,
+"quant_research_phd_mandatory": false,
+"cxx_hardcore": false,
+"reporting_heavy": false,
+"quant_intensity": 0,
+"tools": [],
+"red_flags": [],
+"signals_for_fit": []
 }
-Règles (obligatoires)
 
-Si info absente : null ou [].
+RÈGLES GÉNÉRALES
 
-Normalisation :
+Si information absente → null (ou [] pour listes).
 
-contract_type ∈ {INTERNSHIP,APPRENTICESHIP,VIE,PERMANENT,TEMP,GRADUATE_PROGRAM,CDD} sinon null
+Ne jamais inventer.
 
-seniority ∈ {INTERN,JUNIOR,ASSOCIATE,SENIOR,UNKNOWN} sinon null
+Ne jamais extrapoler.
 
-role_family ∈ {TRADING,STRUCTURING,PRICING,XVA,MODEL_RISK,MARKET_RISK,COUNTERPARTY_RISK,P&L_VALUATION,FO_TOOLS,DATA_SCIENCE,PRODUCT_CONTROL,ALM,COMPLIANCE,OPERATIONS,UNKNOWN}
+Ne jamais interpréter implicitement.
 
-role_type ∈ {FRONT_OFFICE,FRONT_SUPPORT,MIDDLE_OFFICE,CONTROL,BACK_OFFICE,RESEARCH,UNKNOWN}
+Ne jamais ajouter de champ.
 
-tools: uniquement outils/langages explicitement cités.
+Retourner UNIQUEMENT le JSON final.
 
-asset_classes: uniquement ce qui est explicitement cité (FX/RATES/CREDIT/EQUITIES/COMMODITIES/POWER/GAS/OIL/EMISSIONS/CRYPTO/MULTI_ASSET).
+EXTRACTION FACTUELLE
+1️⃣ Champs textuels
 
-Flags :
+Remplir uniquement si explicitement mentionné :
 
-reporting_heavy=true si reporting périodique / regulatory reporting / dashboards / BAU est central.
+company
 
-model_validation=true si validation indépendante/benchmark/validation report/model risk est central.
+role_title
 
-derivatives_pricing=true si pricing/valuation dérivés est central.
+location
 
-energy_derivatives=true si dérivés énergie/commodities explicitement.
+remote_policy
 
-cxx_hardcore=true seulement si dev C++ perf-critical est mission principale.
+contract_type (si explicitement indiqué : internship, permanent, etc.)
 
-quant_research_phd_mandatory=true si PhD mandatory.
+seniority (si explicitement mentionné : intern, junior, senior…)
 
-quant_intensity (déterministe) :
+Si non explicitement indiqué → null.
 
-base 0
+2️⃣ role_family et role_type
 
-+3 si pricing/stochastic/PDE/MC/calibration/Greeks/VaR/stress/XVA
+Remplir uniquement si explicitement identifiable dans le texte
+(ex : “Market Risk Analyst”, “Model Validation”, “Trading Desk”, etc.)
 
-+2 Python, +1 SQL, +1 VBA, +1 C++
+Sinon → null.
 
-+2 ML/AI
+Ne pas deviner.
 
-+2 prod code (git/CI/tests/pipelines)
+3️⃣ business_domain
 
--3 si reporting_heavy
+Inclure uniquement domaines explicitement cités, par exemple :
 
-clamp 0..10
+FX
 
-Tags :
+Fixed Income
 
-red_flags ∈ {REPORTING,COMPLIANCE_HEAVY,OPS_HEAVY,PHD_ONLY,CXX_HARDCORE,ELIGIBILITY_BLOCKER,LOW_FO_PROXIMITY}
+Equity Derivatives
 
-signals_for_fit ∈ {FRONT_OFFICE_PROXIMITY,BUILDING_INTERNAL_TOOLS,PRODUCTION_CODE_EXPECTED,DERIVATIVES_PRICING_CORE,MODEL_VALIDATION_CORE,MARKET_RISK_ANALYTICS,COUNTERPARTY_RISK_ANALYTICS,ENERGY_COMMODITIES_EXPOSURE,CRYPTO_EXPOSURE,EXECUTION_ALGO_EXPOSURE,XVA_EXPOSURE}
+Commodities
+
+Crypto
+
+Risk Management
+
+Model Validation
+
+Execution Algorithms
+
+Machine Learning
+
+Ne pas inférer.
+
+4️⃣ asset_classes
+
+Inclure uniquement si explicitement mentionné :
+
+FX
+RATES
+CREDIT
+EQUITIES
+COMMODITIES
+POWER
+GAS
+OIL
+EMISSIONS
+CRYPTO
+MULTI_ASSET
+
+Sinon [].
+
+5️⃣ key_missions / key_requirements
+
+Listes de phrases courtes.
+
+Reformulation légère autorisée.
+
+Ne jamais inventer.
+
+Ne pas résumer excessivement.
+
+Ne pas interpréter.
+
+6️⃣ tools
+
+Inclure uniquement outils/langages explicitement cités :
+
+Exemples :
+Python
+SQL
+VBA
+C++
+R
+SAS
+Bloomberg
+Git
+
+Ne pas ajouter si non mentionné.
+
+BOOLÉENS (STRICTEMENT FACTUELS)
+
+Mettre true uniquement si explicitement central dans l’annonce.
+
+model_validation = true
+→ si validation indépendante de modèles / benchmark / validation report explicitement mentionné.
+
+market_risk = true
+→ si VaR / stress testing / risk metrics / market risk explicitement mentionné.
+
+counterparty_risk = true
+→ si CVA / exposure / counterparty risk explicitement mentionné.
+
+derivatives_pricing = true
+→ si pricing / valuation de dérivés explicitement central.
+
+energy_derivatives = true
+→ si dérivés énergie / commodities trading explicitement mentionné.
+
+quant_research_phd_mandatory = true
+→ si PhD mandatory explicitement écrit.
+
+cxx_hardcore = true
+→ si développement C++ performance-critical est mission principale.
+
+reporting_heavy = true
+→ si reporting périodique, dashboards, regulatory reporting ou BAU reporting sont centraux.
+
+Sinon → false.
+
+IMPORTANT
+
+quant_intensity doit rester 0 (sera calculé plus tard).
+
+red_flags doit rester [].
+
+signals_for_fit doit rester [].
+
+Ne jamais appliquer de logique métier.
+
+Ne jamais appliquer de scoring.
+
+Ne jamais normaliser dans des catégories fermées.
+
+Ne jamais interpréter stratégiquement.
+
+Retourner UNIQUEMENT le JSON.
