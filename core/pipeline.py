@@ -9,6 +9,37 @@ from core.application_mode import detect_application_mode
 from core.patch_latex_cv import patch_latex_cv
 from core.latex_compiler import compile_latex
 
+def build_cv_title(job_json: dict) -> str:
+    role_title = job_json.get("role_title")
+    if isinstance(role_title, str) and role_title.strip():
+        return role_title.strip()
+
+    role_family = job_json.get("role_family")
+    signals = set(job_json.get("signals_for_fit") or [])
+    asset_classes = set(job_json.get("asset_classes") or [])
+
+    mapping = {
+        "MARKET_RISK": "Market Risk Quant / Analyst",
+        "MODEL_RISK": "Model Validation Quant",
+        "PRICING": "Derivatives Pricing Quant",
+        "STRUCTURING": "Structuring Analyst",
+        "TRADING": "Trading Quant / Analyst",
+        "FO_TOOLS": "Front Office Quant Developer",
+        "P&L_VALUATION": "P&L / Valuation Analyst",
+        "DATA_SCIENCE": "Quant Data Scientist",
+        "XVA": "XVA Quant",
+        "COUNTERPARTY_RISK": "Counterparty / XVA Quant",
+    }
+
+    base = mapping.get(role_family, "Quantitative Analyst")
+
+    if "EXECUTION_ALGO_EXPOSURE" in signals:
+        base = "Execution / Algo Quant"
+
+    if "FX" in asset_classes and "EXECUTION_ALGO_EXPOSURE" in signals:
+        base = "FX Execution / Algo Quant"
+
+    return base
 
 def run_analysis(job_json: dict) -> dict:
     """
@@ -60,7 +91,7 @@ def run_generate_application(job_json: dict) -> dict:
 
     # Patch CV
     generated_content = {
-        "cv_title": f"{job_json.get('role_title', 'Quant Role')} – {job_json.get('company', '')}"
+        "cv_title": build_cv_title(job_json)
     }
 
     output_tex_path = artifacts_dir / "generated_cv.tex"
