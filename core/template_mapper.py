@@ -30,20 +30,25 @@ def map_template(job_json: Dict) -> Dict:
             "template_file": TEMPLATE_MAPPING["ENERGY"],
         }
 
-    # 3️⃣ Structuring
+    # 3️⃣ Role family dominant (IMPORTANT)
+    if role_family == "MARKET_RISK":
+        return {
+            "template_key": "MARKET_RISK",
+            "template_file": TEMPLATE_MAPPING["MARKET_RISK"],
+        }
+
     if role_family == "STRUCTURING":
         return {
             "template_key": "STRUCTURING",
             "template_file": TEMPLATE_MAPPING["STRUCTURING"],
         }
 
-    # 4️⃣ Derivatives pricing
+    # 4️⃣ Derivatives pricing (only if not market risk)
     if job_json.get("derivatives_pricing"):
         return {
             "template_key": "MODEL_VALIDATION",
             "template_file": TEMPLATE_MAPPING["MODEL_VALIDATION"],
         }
-
     # 5️⃣ Market risk
     if job_json.get("market_risk"):
         return {
