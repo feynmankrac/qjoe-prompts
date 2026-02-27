@@ -34,17 +34,16 @@ def compute_score(job_json: Dict) -> Dict:
     # FO PROXIMITY
     # ======================
 
-    if job_json.get("role_type") in {"FRONT_OFFICE", "FRONT_SUPPORT"}:
-        score += 10
-        contributions.append(("Front office proximity", 10))
-
-    if "BUILDING_INTERNAL_TOOLS" in signals:
-        score += 10
-        contributions.append(("Building internal tools", 10))
-
-    if "PRODUCTION_CODE_EXPECTED" in signals:
-        score += 10
-        contributions.append(("Production code expected", 10))
+# FO proximity (EN + FR)
+    if _has_any(t, [
+        r"\btrading desk\b",
+        r"\bfront office\b",
+        r"\btrader\b",
+        r"\bdesk\b",
+        r"\bsalle des marchés\b",
+        r"\btrading\b"
+    ]):
+        signals.add("FRONT_OFFICE_PROXIMITY")
 
     # ======================
     # QUANT INTENSITY BONUS
@@ -83,6 +82,16 @@ def compute_score(job_json: Dict) -> Dict:
         contributions.append(
             ("Execution algorithm exposure", 10)
         )
+    # NEW TARGETED BONUS
+        if (
+            job_json.get("role_family") == "DATA_SCIENCE"
+            and "FX" in asset_classes
+            and "FRONT_OFFICE_PROXIMITY" in signals
+            and "EXECUTION_ALGO_EXPOSURE" in signals
+            and "BUILDING_INTERNAL_TOOLS" in signals
+        ):
+            score += 20
+            contributions.append(("Target profile: FX execution + FO + tooling", 20))
 
     # ======================
     # PENALTIES
