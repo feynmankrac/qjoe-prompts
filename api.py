@@ -1,13 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from datetime import datetime, UTC
 
-from core.pipeline import run_pipeline
+from core.pipeline import run_analysis, run_generate_application
 
 app = FastAPI(title="QJOE Engine")
 
+
 class JobRequest(BaseModel):
-    job_text: str
+    job_json: dict
 
 
 @app.get("/health")
@@ -17,13 +17,23 @@ def health():
 
 @app.post("/analyze")
 def analyze(request: JobRequest):
+    return run_analysis(request.job_json)
 
-    # ⚠️ Pour l’instant on envoie un job_json minimal.
-    # On branchera extract + normalize après.
-    job_json = {
-        "raw_text": request.job_text
+
+@app.post("/generate_application")
+def generate_application(request: JobRequest):
+
+    analysis = run_analysis(request.job_json)
+
+    if analysis.get("decision") != "GREEN":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate application: decision is not GREEN"
+        )
+
+    generation = run_generate_application(request.job_json)
+
+    return {
+        "analysis": analysis,
+        "generation": generation
     }
-
-    result = run_pipeline(job_json)
-
-    return result
