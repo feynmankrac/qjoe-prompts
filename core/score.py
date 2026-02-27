@@ -36,11 +36,11 @@ def compute_score(job_json: Dict) -> Dict:
     # FO PROXIMITY (SPEC)
     # ======================
 
-    if role_type in {"FRONT_OFFICE", "FRONT_SUPPORT"}:
+    if job_json.get("role_type") in {"FRONT_OFFICE", "FRONT_SUPPORT"}:
         score += 10
         contributions.append(("Front office proximity", 10))
 
-    # Optional: prod code expected signal
+    # Production code bonus (signal-based)
     if "PRODUCTION_CODE_EXPECTED" in signals:
         score += 10
         contributions.append(("Production-quality code expected", 10))
