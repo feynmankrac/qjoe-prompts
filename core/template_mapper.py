@@ -14,55 +14,61 @@ TEMPLATE_MAPPING = {
 
 def map_template(job_json: Dict) -> Dict:
     role_family = job_json.get("role_family")
+    signals = job_json.get("signals_for_fit") or []
 
-    if role_family in ("XVA", "COUNTERPARTY_RISK"):
-        return {
-            "template_key": "DATA_EXECUTION",
-            "template_file": TEMPLATE_MAPPING["DATA_EXECUTION"],
-        }
-
-    if job_json.get("model_validation") or role_family in ("MODEL_RISK", "PRICING"):
+    # 1️⃣ Model validation prioritaire
+    if "MODEL_VALIDATION_CORE" in signals:
         return {
             "template_key": "MODEL_VALIDATION",
             "template_file": TEMPLATE_MAPPING["MODEL_VALIDATION"],
         }
 
+    # 2️⃣ Energy trading
     if job_json.get("energy_derivatives"):
         return {
             "template_key": "ENERGY",
             "template_file": TEMPLATE_MAPPING["ENERGY"],
         }
 
-    if job_json.get("market_risk") or role_family == "MARKET_RISK":
-        return {
-            "template_key": "MARKET_RISK",
-            "template_file": TEMPLATE_MAPPING["MARKET_RISK"],
-        }
-
-    if role_family in ("TRADING", "FO_TOOLS"):
-        return {
-            "template_key": "TRADING",
-            "template_file": TEMPLATE_MAPPING["TRADING"],
-        }
-
+    # 3️⃣ Structuring
     if role_family == "STRUCTURING":
         return {
             "template_key": "STRUCTURING",
             "template_file": TEMPLATE_MAPPING["STRUCTURING"],
         }
 
-    if role_family == "P&L_VALUATION":
+    # 4️⃣ Derivatives pricing
+    if job_json.get("derivatives_pricing"):
         return {
-            "template_key": "PNL_VALUATION",
-            "template_file": TEMPLATE_MAPPING["PNL_VALUATION"],
+            "template_key": "MODEL_VALIDATION",
+            "template_file": TEMPLATE_MAPPING["MODEL_VALIDATION"],
         }
 
+    # 5️⃣ Market risk
+    if job_json.get("market_risk"):
+        return {
+            "template_key": "MARKET_RISK",
+            "template_file": TEMPLATE_MAPPING["MARKET_RISK"],
+        }
+
+    # 6️⃣ Trading / execution
+    if (
+        role_family in ("TRADING", "FO_TOOLS")
+        or "EXECUTION_ALGO_EXPOSURE" in signals
+    ):
+        return {
+            "template_key": "TRADING",
+            "template_file": TEMPLATE_MAPPING["TRADING"],
+        }
+
+    # 7️⃣ Data science
     if role_family == "DATA_SCIENCE":
         return {
             "template_key": "DATA_EXECUTION",
             "template_file": TEMPLATE_MAPPING["DATA_EXECUTION"],
         }
 
+    # Fallback
     return {
         "template_key": "DATA_EXECUTION",
         "template_file": TEMPLATE_MAPPING["DATA_EXECUTION"],
