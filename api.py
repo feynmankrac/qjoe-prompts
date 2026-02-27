@@ -3,22 +3,24 @@ from pydantic import BaseModel
 import os
 
 from core.pipeline import run_analysis, run_generate_application
+from core.pipeline_text import run_analysis_from_text
 
 app = FastAPI(title="QJOE Engine")
 
-# Token attendu (défini en variable d'environnement)
 API_TOKEN = os.getenv("QJOE_API_TOKEN")
-#print("SERVER TOKEN:", API_TOKEN)
 
 
-class JobRequest(BaseModel):
+class JobJSONRequest(BaseModel):
     job_json: dict
+
+
+class JobTextRequest(BaseModel):
+    job_text: str
 
 
 def verify_token(x_api_key: str = Header(None)):
     if API_TOKEN is None:
         raise HTTPException(status_code=500, detail="API token not configured on server")
-
     if x_api_key != API_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -29,28 +31,27 @@ def health(x_api_key: str = Header(None)):
     return {"status": "ok"}
 
 
+# ✅ NOUVEAU : analyse depuis texte brut
+@app.post("/analyze_text")
+def analyze_text(request: JobTextRequest, x_api_key: str = Header(None)):
+    verify_token(x_api_key)
+    return run_analysis_from_text(request.job_text)
+
+
+# (optionnel) garder l’ancien endpoint JSON si tu veux
 @app.post("/analyze")
-def analyze(request: JobRequest, x_api_key: str = Header(None)):
+def analyze(request: JobJSONRequest, x_api_key: str = Header(None)):
     verify_token(x_api_key)
     return run_analysis(request.job_json)
 
 
 @app.post("/generate_application")
-def generate_application(request: JobRequest, x_api_key: str = Header(None)):
-
+def generate_application(request: JobJSONRequest, x_api_key: str = Header(None)):
     verify_token(x_api_key)
 
     analysis = run_analysis(request.job_json)
-
     if analysis.get("decision") != "GREEN":
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot generate application: decision is not GREEN"
-        )
+        raise HTTPException(status_code=400, detail="Cannot generate application: decision is not GREEN")
 
     generation = run_generate_application(request.job_json)
-
-    return {
-        "analysis": analysis,
-        "generation": generation
-    }
+    return {"analysis": analysis, "generation": generation}
