@@ -10,6 +10,10 @@ def compute_score(job_json: Dict) -> Dict:
     red_flags = job_json.get("red_flags") or []
     asset_classes = job_json.get("asset_classes") or []
 
+    # ======================
+    # CORE TARGETS
+    # ======================
+
     if job_json.get("model_validation"):
         score += 25
         contributions.append(("Model validation core", 25))
@@ -26,6 +30,10 @@ def compute_score(job_json: Dict) -> Dict:
         score += 15
         contributions.append(("Energy/commodities derivatives exposure", 15))
 
+    # ======================
+    # FO PROXIMITY
+    # ======================
+
     if job_json.get("role_type") in {"FRONT_OFFICE", "FRONT_SUPPORT"}:
         score += 10
         contributions.append(("Front office proximity", 10))
@@ -38,6 +46,10 @@ def compute_score(job_json: Dict) -> Dict:
         score += 10
         contributions.append(("Production code expected", 10))
 
+    # ======================
+    # QUANT INTENSITY BONUS
+    # ======================
+
     quant_intensity = job_json.get("quant_intensity") or 0
 
     if quant_intensity >= 7:
@@ -47,17 +59,35 @@ def compute_score(job_json: Dict) -> Dict:
         score += 3
         contributions.append(("Moderate quant intensity", 3))
 
+    # ======================
+    # FX DATA SCIENCE TRADING BONUS (NEW LOGIC)
+    # ======================
+
+    if (
+        job_json.get("role_family") == "DATA_SCIENCE"
+        and "FX" in asset_classes
+        and "FRONT_OFFICE_PROXIMITY" in signals
+    ):
+        score += 15
+        contributions.append(
+            ("FX data science in trading environment", 15)
+        )
+
+    # Extra boost if execution algo exposure explicitly detected
     if (
         job_json.get("role_family") == "DATA_SCIENCE"
         and "FX" in asset_classes
         and "EXECUTION_ALGO_EXPOSURE" in signals
     ):
-        score += 30
+        score += 10
         contributions.append(
-            ("DATA_SCIENCE+FX+EXECUTION_ALGO_EXPOSURE bonus", 30)
+            ("Execution algorithm exposure", 10)
         )
 
-    # Penalties
+    # ======================
+    # PENALTIES
+    # ======================
+
     if "COMPLIANCE_HEAVY" in red_flags:
         score -= 15
 
@@ -69,6 +99,10 @@ def compute_score(job_json: Dict) -> Dict:
 
     if job_json.get("reporting_heavy") is True:
         score -= 25
+
+    # ======================
+    # FINAL DECISION
+    # ======================
 
     score = max(0, min(100, score))
 
