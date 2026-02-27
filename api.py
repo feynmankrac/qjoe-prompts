@@ -16,6 +16,8 @@ class JobRequest(BaseModel):
 
 
 def verify_token(x_api_key: str = Header(None)):
+    print("EXPECTED TOKEN:", API_TOKEN)
+    print("RECEIVED TOKEN:", x_api_key)
     if API_TOKEN is None:
         raise HTTPException(status_code=500, detail="API token not configured on server")
 
