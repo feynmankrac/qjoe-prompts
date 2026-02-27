@@ -34,16 +34,7 @@ def compute_score(job_json: Dict) -> Dict:
     # FO PROXIMITY
     # ======================
 
-# FO proximity (EN + FR)
-    if _has_any(t, [
-        r"\btrading desk\b",
-        r"\bfront office\b",
-        r"\btrader\b",
-        r"\bdesk\b",
-        r"\bsalle des marchés\b",
-        r"\btrading\b"
-    ]):
-        signals.add("FRONT_OFFICE_PROXIMITY")
+
 
     # ======================
     # QUANT INTENSITY BONUS
