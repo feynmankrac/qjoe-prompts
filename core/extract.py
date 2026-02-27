@@ -75,6 +75,19 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
     base["tools"] = tools
 
     # -----------------------------
+    # Python tooling core (signal autonome)
+    # -----------------------------
+    if "Python" in tools and _has_any(t, [
+        r"\bdevelop(ing)?\b",
+        r"\bbuild(ing)?\b",
+        r"\btool(s)?\b",
+        r"\bapplication(s)?\b",
+        r"\bframework\b",
+        r"\bplatform\b"
+    ]):
+        base["signals_for_fit"].append("TOOLING_PYTHON_CORE")
+
+    # -----------------------------
     # BOOLEANS CORE
     # -----------------------------
     base["market_risk"] = _has_any(t, [
@@ -93,9 +106,19 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
     ])
 
     base["derivatives_pricing"] = _has_any(t, [
-        r"\bpricing\b", r"\bvaluation\b", r"\bderivatives?\b", r"\bgreeks?\b",
-        r"\bcalibration\b", r"\bmonte carlo\b", r"\bpde\b", r"\bstochastic\b",
-        r"\bvolatility\b", r"\bsmile\b"
+        r"\bpricing\b",
+        r"\bvaluation\b",
+        r"\bderivatives?\b",
+        r"\boption(s)?\b",
+        r"\bvanilla\b",
+        r"\bexotic\b",
+        r"\bgreeks?\b",
+        r"\bcalibration\b",
+        r"\bmonte carlo\b",
+        r"\bpde\b",
+        r"\bstochastic\b",
+        r"\bvolatility\b",
+        r"\bsmile\b"
     ])
 
     base["energy_derivatives"] = _has_any(t, [
@@ -171,18 +194,48 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
         signals.add("FRONT_OFFICE_PROXIMITY")
 
     # -----------------------------
-    # Internal tools (EN + FR)
+    # Interaction with traders (distinct from role_type)
+    # -----------------------------
+    if _has_any(t, [
+        r"\binteraction with traders\b",
+        r"\binteract with traders\b",
+        r"\bclose to traders\b",
+        r"\bcollaboration with traders\b",
+        r"\bworking with traders\b",
+        r"\ben lien avec les traders\b",
+        r"\bcollaboration avec la salle\b"
+    ]):
+        signals.add("INTERACTION_WITH_TRADERS")
+
+    # -----------------------------
+    # Internal tools / tooling
     # -----------------------------
     if _has_any(t, [
         r"\binternal tools?\b",
-        r"\bbuild tools?\b",
+        r"\bbuild(ing)? tools?\b",
+        r"\bdevelop(ing)? tools?\b",
+        r"\bpython tool\b",
+        r"\btool development\b",
         r"\btooling\b",
         r"\bplatform\b",
+        r"\bapplication interne\b",
         r"\bcréation d['’]outils\b",
-        r"\bconception d['’]outils\b",
-        r"\boutils d['’]aide à la décision\b"
+        r"\bconception d['’]outils\b"
     ]):
         signals.add("BUILDING_INTERNAL_TOOLS")
+
+    # -----------------------------
+    # Python tooling core (signal autonome)
+    # -----------------------------
+    if "Python" in tools and _has_any(t, [
+        r"\bdevelop(ing)?\b",
+        r"\bbuild(ing)?\b",
+        r"\btool(s)?\b",
+        r"\bapplication(s)?\b",
+        r"\bframework\b",
+        r"\bplatform\b"
+    ]):
+        signals.add("TOOLING_PYTHON_CORE")
 
     # -----------------------------
     # Execution algorithm exposure (EN + FR) - robust
@@ -285,7 +338,7 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
 
     if _has_any(t, [
         r"\bpricing\b", r"\bstochastic\b", r"\bpde\b", r"\bmonte carlo\b",
-        r"\bcalibration\b", r"\bgreeks?\b", r"\bvar\b", r"\bstress testing\b",
+        r"\bcalibration\b", r"\bgreeks?\b", r"\bvar\b", r"\bstress test(ing)?\b",
         r"\bxva\b", r"\bcva\b", r"\bdva\b", r"\bfva\b"
     ]):
         qi += 3
