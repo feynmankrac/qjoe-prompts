@@ -8,6 +8,7 @@ app = FastAPI(title="QJOE Engine")
 
 # Token attendu (défini en variable d'environnement)
 API_TOKEN = os.getenv("QJOE_API_TOKEN")
+print("SERVER TOKEN:", API_TOKEN)
 
 
 class JobRequest(BaseModel):
