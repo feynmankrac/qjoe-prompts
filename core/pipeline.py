@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import re
 
 from core.gate import evaluate_gate
 from core.score import compute_score
@@ -8,6 +9,11 @@ from core.language_strategy import determine_languages
 from core.application_mode import detect_application_mode
 from core.patch_latex_cv import patch_latex_cv
 from core.latex_compiler import compile_latex
+
+
+# ======================
+# TITLE BUILDER
+# ======================
 
 def build_cv_title(job_json: dict) -> str:
     role_title = job_json.get("role_title")
@@ -41,18 +47,35 @@ def build_cv_title(job_json: dict) -> str:
 
     return base
 
-def run_analysis(job_json: dict) -> dict:
-    """
-    Pipeline décisionnel uniquement.
-    Ne génère aucun fichier.
-    """
 
+# ======================
+# ARTIFACT NAMING (FORMAT A)
+# ======================
+
+def _slug(s: str) -> str:
+    s = (s or "").strip().upper()
+    s = re.sub(r"[^A-Z0-9]+", "_", s)
+    return s.strip("_") or "UNKNOWN"
+
+
+def build_artifact_basename(job_json: dict, score_result: dict) -> str:
+    score = int(score_result.get("score_0_100") or 0)
+    score_str = f"{score:03d}"  # 3 digits for proper sorting
+    role_family = _slug(job_json.get("role_family") or "UNKNOWN")
+    ts = datetime.utcnow().strftime("%y-%m-%d_%H-%M")
+    return f"{score_str}_{role_family}_{ts}"
+
+
+# ======================
+# ANALYSIS ONLY
+# ======================
+
+def run_analysis(job_json: dict) -> dict:
     result = {
         "ts": datetime.utcnow().isoformat() + "Z",
         "job_json": job_json,
     }
 
-    # Gate
     gate_result = evaluate_gate(job_json)
     result["gate"] = gate_result
 
@@ -61,7 +84,6 @@ def run_analysis(job_json: dict) -> dict:
         result["status"] = "BLOCKED"
         return result
 
-    # Score
     score_result = compute_score(job_json)
     result["score"] = score_result
     result["decision"] = score_result.get("decision")
@@ -70,14 +92,17 @@ def run_analysis(job_json: dict) -> dict:
     return result
 
 
-def run_generate_application(job_json: dict) -> dict:
-    """
-    Génère CV + compile PDF.
-    Suppose que la décision a déjà été validée.
-    """
+# ======================
+# GENERATE CV + PDF
+# ======================
 
+def run_generate_application(job_json: dict) -> dict:
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    # Recompute score for naming
+    score_result = compute_score(job_json)
+    basename = build_artifact_basename(job_json, score_result)
 
     # Template mapping
     template_result = map_template(job_json)
@@ -94,7 +119,7 @@ def run_generate_application(job_json: dict) -> dict:
         "cv_title": build_cv_title(job_json)
     }
 
-    output_tex_path = artifacts_dir / "generated_cv.tex"
+    output_tex_path = artifacts_dir / f"{basename}.tex"
 
     patch_latex_cv(
         template_path=str(template_path),
@@ -104,6 +129,19 @@ def run_generate_application(job_json: dict) -> dict:
 
     # Compile
     compile_result = compile_latex(str(output_tex_path))
+
+    pdf_path = compile_result.get("pdf_path")
+    final_pdf_path = None
+
+    if pdf_path:
+        pdf_path = Path(pdf_path)
+        final_pdf_path = artifacts_dir / f"{basename}.pdf"
+        try:
+            if pdf_path.exists():
+                pdf_path.replace(final_pdf_path)
+                compile_result["pdf_path"] = str(final_pdf_path)
+        except Exception:
+            pass
 
     return {
         "template": template_result,
