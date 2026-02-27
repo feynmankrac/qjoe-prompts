@@ -6,12 +6,11 @@ def clamp(value: int, min_val: int = 0, max_val: int = 10) -> int:
 
 
 def recompute_quant_intensity(job_json: Dict) -> int:
-
     score = 0
 
     text_blob = " ".join(
-        job_json.get("key_missions", []) +
-        job_json.get("key_requirements", [])
+        (job_json.get("key_missions", []) or []) +
+        (job_json.get("key_requirements", []) or [])
     ).lower()
 
     # +3 pricing / risk math keywords
@@ -20,13 +19,11 @@ def recompute_quant_intensity(job_json: Dict) -> int:
         "monte carlo", "calibration",
         "greeks", "var", "stress", "xva"
     ]
-
     if any(k in text_blob for k in math_keywords):
         score += 3
 
     # tools
-    tools = job_json.get("tools", [])
-
+    tools = job_json.get("tools", []) or []
     if "Python" in tools:
         score += 2
     if "SQL" in tools:
@@ -53,7 +50,6 @@ def recompute_quant_intensity(job_json: Dict) -> int:
 
 
 def compute_red_flags(job_json: Dict) -> list:
-
     flags = []
 
     if job_json.get("reporting_heavy"):
@@ -72,7 +68,6 @@ def compute_red_flags(job_json: Dict) -> list:
 
 
 def compute_signals(job_json: Dict) -> list:
-
     signals = []
 
     if job_json.get("role_type") in {"FRONT_OFFICE", "FRONT_SUPPORT"}:
@@ -93,18 +88,32 @@ def compute_signals(job_json: Dict) -> list:
     if job_json.get("energy_derivatives"):
         signals.append("ENERGY_COMMODITIES_EXPOSURE")
 
-    if "EXECUTION_ALGO_EXPOSURE" in job_json.get("signals_for_fit", []):
+    # conserve ce signal si présent (ex: venant d'extract)
+    if "EXECUTION_ALGO_EXPOSURE" in (job_json.get("signals_for_fit") or []):
         signals.append("EXECUTION_ALGO_EXPOSURE")
 
+    # dédup
     return list(set(signals))
 
 
 def normalize_job(job_json: Dict) -> Dict:
+    """
+    Normalisation conservatrice :
+    - ne détruit pas les signaux/flags détectés à l'extract
+    - ne baisse jamais quant_intensity
+    """
 
-    job_json["quant_intensity"] = recompute_quant_intensity(job_json)
+    incoming_signals = set(job_json.get("signals_for_fit") or [])
+    incoming_flags = set(job_json.get("red_flags") or [])
+    incoming_qi = job_json.get("quant_intensity") or 0
 
-    job_json["red_flags"] = compute_red_flags(job_json)
+    recomputed_qi = recompute_quant_intensity(job_json)
+    job_json["quant_intensity"] = max(incoming_qi, recomputed_qi)
 
-    job_json["signals_for_fit"] = compute_signals(job_json)
+    computed_flags = set(compute_red_flags(job_json))
+    job_json["red_flags"] = sorted(incoming_flags.union(computed_flags))
+
+    computed_signals = set(compute_signals(job_json))
+    job_json["signals_for_fit"] = sorted(incoming_signals.union(computed_signals))
 
     return job_json
