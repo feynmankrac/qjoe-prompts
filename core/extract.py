@@ -185,13 +185,14 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
         signals.add("BUILDING_INTERNAL_TOOLS")
 
     # -----------------------------
-    # Execution algorithm exposure (EN + FR)
+    # Execution algorithm exposure (EN + FR) - robust
     # -----------------------------
     if _has_any(t, [
-        r"\bexecution algorithm\b",
-        r"\balgorithmes? d['’]exécution\b",
-        r"\balgo execution\b",
-        r"\bexecution algo\b"
+        r"execution algorithm",
+        r"algo execution",
+        r"execution algo",
+        r"algorithmes?\s+d[’']ex[ée]cution",   # gère d'exécution / d’exécution / execution
+        r"algorithmes?\s+d[’']execution"
     ]):
         signals.add("EXECUTION_ALGO_EXPOSURE")
 
