@@ -142,29 +142,70 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
 
     if base["model_validation"]:
         signals.add("MODEL_VALIDATION_CORE")
+
     if base["market_risk"]:
         signals.add("MARKET_RISK_ANALYTICS")
+
     if base["counterparty_risk"]:
         signals.add("COUNTERPARTY_RISK_ANALYTICS")
         if _has_any(t, [r"\bcva\b", r"\bdva\b", r"\bfva\b", r"\bxva\b"]):
             signals.add("XVA_EXPOSURE")
+
     if base["derivatives_pricing"]:
         signals.add("DERIVATIVES_PRICING_CORE")
+
     if base["energy_derivatives"]:
         signals.add("ENERGY_COMMODITIES_EXPOSURE")
 
-    # FO proximity
-    if _has_any(t, [r"\btrading desk\b", r"\bfront office\b", r"\btrader", r"\bdesk\b"]):
+    # -----------------------------
+    # FO proximity (EN + FR)
+    # -----------------------------
+    if _has_any(t, [
+        r"\btrading desk\b",
+        r"\bfront office\b",
+        r"\btrader\b",
+        r"\bdesk\b",
+        r"\bsalle des marchés\b",
+        r"\btrading\b"
+    ]):
         signals.add("FRONT_OFFICE_PROXIMITY")
 
-    # Internal tools
-    if _has_any(t, [r"\binternal tools?\b", r"\bbuild tools?\b", r"\btooling\b", r"\bplatform\b"]):
+    # -----------------------------
+    # Internal tools (EN + FR)
+    # -----------------------------
+    if _has_any(t, [
+        r"\binternal tools?\b",
+        r"\bbuild tools?\b",
+        r"\btooling\b",
+        r"\bplatform\b",
+        r"\bcréation d['’]outils\b",
+        r"\bconception d['’]outils\b",
+        r"\boutils d['’]aide à la décision\b"
+    ]):
         signals.add("BUILDING_INTERNAL_TOOLS")
 
-    # Production code expected
+    # -----------------------------
+    # Execution algorithm exposure (EN + FR)
+    # -----------------------------
     if _has_any(t, [
-        r"\bgit\b", r"\bci\b", r"\bcd\b", r"\bunit tests?\b", r"\bintegration tests?\b",
-        r"\bpipeline(s)?\b", r"\bcode review\b"
+        r"\bexecution algorithm\b",
+        r"\balgorithmes? d['’]exécution\b",
+        r"\balgo execution\b",
+        r"\bexecution algo\b"
+    ]):
+        signals.add("EXECUTION_ALGO_EXPOSURE")
+
+    # -----------------------------
+    # Production code expected
+    # -----------------------------
+    if _has_any(t, [
+        r"\bgit\b",
+        r"\bci\b",
+        r"\bcd\b",
+        r"\bunit tests?\b",
+        r"\bintegration tests?\b",
+        r"\bpipeline(s)?\b",
+        r"\bcode review\b"
     ]):
         signals.add("PRODUCTION_CODE_EXPECTED")
 
@@ -257,7 +298,14 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
     if "C++" in tools:
         qi += 1
 
-    if _has_any(t, [r"\bmachine learning\b", r"\bdeep learning\b", r"\bai\b", r"\bml\b"]):
+    if _has_any(t, [
+        r"\bmachine learning\b",
+        r"\bdeep learning\b",
+        r"\bai\b",
+        r"\bml\b",
+        r"\bia\b",
+        r"\bintelligence artificielle\b"
+    ]):
         qi += 2
 
     if _has_any(t, [
