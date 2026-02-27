@@ -8,7 +8,7 @@ app = FastAPI(title="QJOE Engine")
 
 # Token attendu (défini en variable d'environnement)
 API_TOKEN = os.getenv("QJOE_API_TOKEN")
-print("SERVER TOKEN:", API_TOKEN)
+#print("SERVER TOKEN:", API_TOKEN)
 
 
 class JobRequest(BaseModel):
@@ -16,8 +16,6 @@ class JobRequest(BaseModel):
 
 
 def verify_token(x_api_key: str = Header(None)):
-    print("EXPECTED TOKEN:", API_TOKEN)
-    print("RECEIVED TOKEN:", x_api_key)
     if API_TOKEN is None:
         raise HTTPException(status_code=500, detail="API token not configured on server")
 
