@@ -4,3 +4,9 @@ __pycache__/
 *.out
 *.pdf
 generated_cv.*
+*.json
+venv/
+artifacts/
+secrets/
+*.pickle
+.env

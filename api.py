@@ -2,9 +2,18 @@ from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from typing import List
 import os
+from core.gmail_draft import create_gmail_draft
 
 from core.pipeline import run_analysis, run_generate_application
 from core.pipeline_text import run_analysis_from_text
+
+from pydantic import BaseModel
+
+class GmailDraftRequest(BaseModel):
+    to_email: str
+    subject: str
+    body: str
+    attachment_path: str | None = None
 
 app = FastAPI(title="QJOE Engine")
 
@@ -13,6 +22,7 @@ API_TOKEN = os.getenv("QJOE_API_TOKEN")
 
 class JobJSONRequest(BaseModel):
     job_json: dict
+    email_application: bool = False
 
 
 class JobTextRequest(BaseModel):
@@ -24,8 +34,9 @@ class BatchTextRequest(BaseModel):
 
 
 def verify_token(x_api_key: str = Header(None)):
+    # 🔥 MODE DEV : si pas de token configuré → on laisse passer
     if API_TOKEN is None:
-        raise HTTPException(status_code=500, detail="API token not configured on server")
+        return
     if x_api_key != API_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -36,21 +47,25 @@ def health(x_api_key: str = Header(None)):
     return {"status": "ok"}
 
 
-# Analyse depuis texte brut
 @app.post("/analyze_text")
 def analyze_text(request: JobTextRequest, x_api_key: str = Header(None)):
     verify_token(x_api_key)
-    return run_analysis_from_text(request.job_text)
+
+    analysis = run_analysis_from_text(request.job_text)
+
+    return {
+        "decision": analysis.get("decision"),
+        "score": analysis.get("score"),
+        "job_json": analysis.get("job_json")
+    }
 
 
-# Analyse depuis JSON structuré
 @app.post("/analyze")
 def analyze(request: JobJSONRequest, x_api_key: str = Header(None)):
     verify_token(x_api_key)
     return run_analysis(request.job_json)
 
 
-# Génération CV si GREEN
 @app.post("/generate_application")
 def generate_application(request: JobJSONRequest, x_api_key: str = Header(None)):
     verify_token(x_api_key)
@@ -59,11 +74,13 @@ def generate_application(request: JobJSONRequest, x_api_key: str = Header(None))
     if analysis.get("decision") != "GREEN":
         raise HTTPException(status_code=400, detail="Cannot generate application: decision is not GREEN")
 
-    generation = run_generate_application(request.job_json)
+    job_json = request.job_json
+    email_application = request.email_application
+
+    generation = run_generate_application(job_json, email_application=email_application)
     return {"analysis": analysis, "generation": generation}
 
 
-# 🔥 NOUVEAU : Batch processing
 @app.post("/analyze_batch")
 def analyze_batch(request: BatchTextRequest, x_api_key: str = Header(None)):
     verify_token(x_api_key)
@@ -80,7 +97,7 @@ def analyze_batch(request: BatchTextRequest, x_api_key: str = Header(None)):
 
         if analysis.get("decision") == "GREEN":
             generation = run_generate_application(analysis["job_json"])
-            entry["pdf_path"] = generation["artifacts"]["pdf_path"]
+            entry["pdf_path"] = generation["artifacts"]["cv_pdf_path"]
 
         results.append(entry)
 
@@ -88,3 +105,20 @@ def analyze_batch(request: BatchTextRequest, x_api_key: str = Header(None)):
         "count": len(results),
         "results": results
     }
+
+@app.post("/create_gmail_draft")
+def create_gmail_draft_endpoint(req: GmailDraftRequest):
+    credentials_path = os.getenv("GMAIL_OAUTH_CREDENTIALS", "secrets/gmail_oauth_client.json")
+    token_path = os.getenv("GMAIL_OAUTH_TOKEN", "secrets/gmail_token.json")
+    from_email = os.getenv("GMAIL_FROM_EMAIL")  # optionnel
+
+    draft = create_gmail_draft(
+    to_email=req.to_email,
+    subject=req.subject,
+    body=req.body,
+    attachment_path=req.attachment_path,
+        from_email=from_email,
+        credentials_path=credentials_path,
+        token_path=token_path,
+    )
+    return {"ok": True, "draft": draft}

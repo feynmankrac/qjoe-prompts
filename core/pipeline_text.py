@@ -4,9 +4,13 @@ from core.normalize import normalize_job
 
 
 def run_analysis_from_text(job_text: str) -> dict:
-    """
-    job_text (str) -> extract -> normalize -> run_analysis(job_json)
-    """
     extracted = extract_job(job_text)
     normalized = normalize_job(extracted)
-    return run_analysis(normalized)
+
+    analysis = run_analysis(normalized)
+
+    return {
+        "job_json": normalized,
+        "decision": analysis["decision"],
+        "score": analysis["score"]
+    }

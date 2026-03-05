@@ -12,25 +12,31 @@ def recompute_quant_intensity(job_json: Dict) -> int:
         (job_json.get("key_missions", []) or []) +
         (job_json.get("key_requirements", []) or [])
     ).lower()
+    text_blob += " " + (job_json.get("raw_text") or "").lower()
 
     # +3 pricing / risk math keywords
     math_keywords = [
         "pricing", "stochastic", "pde",
         "monte carlo", "calibration",
-        "greeks", "var", "stress", "xva"
+        "greeks", "var", "stress", "xva", "Value at Risk"
     ]
     if any(k in text_blob for k in math_keywords):
         score += 3
 
-    # tools
-    tools = job_json.get("tools", []) or []
-    if "Python" in tools:
+    # market risk
+    if job_json.get("market_risk"):
         score += 2
-    if "SQL" in tools:
+
+    # tools
+    tools = [t.lower() for t in (job_json.get("tools", []) or [])]
+
+    if "python" in tools:
+        score += 3
+    if "sql" in tools:
         score += 1
-    if "VBA" in tools:
+    if "vba" in tools:
         score += 1
-    if "C++" in tools:
+    if "c++" in tools:
         score += 1
 
     # ML
@@ -102,6 +108,15 @@ def normalize_job(job_json: Dict) -> Dict:
     - ne détruit pas les signaux/flags détectés à l'extract
     - ne baisse jamais quant_intensity
     """
+    # 🔥 Fix role_type si manquant mais famille connue
+    if job_json.get("role_type") is None:
+        rf = job_json.get("role_family")
+
+        if rf in {"COUNTERPARTY_RISK", "MARKET_RISK", "MODEL_RISK", "P&L_VALUATION"}:
+            job_json["role_type"] = "MIDDLE_OFFICE"
+
+        elif rf in {"PRICING", "XVA", "FO_TOOLS", "TRADING", "STRUCTURING"}:
+            job_json["role_type"] = "FRONT_SUPPORT"
 
     incoming_signals = set(job_json.get("signals_for_fit") or [])
     incoming_flags = set(job_json.get("red_flags") or [])
@@ -115,5 +130,9 @@ def normalize_job(job_json: Dict) -> Dict:
 
     computed_signals = set(compute_signals(job_json))
     job_json["signals_for_fit"] = sorted(incoming_signals.union(computed_signals))
+
+    print("DEBUG market_risk:", job_json.get("market_risk"))
+    print("DEBUG model_validation:", job_json.get("model_validation"))
+    print("DEBUG role_type:", job_json.get("role_type"))
 
     return job_json

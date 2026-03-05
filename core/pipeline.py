@@ -1,6 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from core.gate import evaluate_gate
 from core.score import compute_score
@@ -9,7 +11,15 @@ from core.language_strategy import determine_languages
 from core.application_mode import detect_application_mode
 from core.patch_latex_cv import patch_latex_cv
 from core.latex_compiler import compile_latex
-
+from core.cover_letter import (
+    generate_cover_letter_tex,
+    save_cover_letter_tex,
+    compile_tex_to_pdf,
+    select_template,
+    get_language,
+    build_cover_letter_filename
+)
+from core.email_generator import build_email_subject, generate_email_body
 
 # ======================
 # TITLE BUILDER
@@ -58,13 +68,18 @@ def _slug(s: str) -> str:
     return s.strip("_") or "UNKNOWN"
 
 
+
 def build_artifact_basename(job_json: dict, score_result: dict) -> str:
     score = int(score_result.get("score_0_100") or 0)
-    score_str = f"{score:03d}"  # 3 digits for proper sorting
-    role_family = _slug(job_json.get("role_family") or "UNKNOWN")
-    ts = datetime.utcnow().strftime("%y-%m-%d_%H-%M")
-    return f"{score_str}_{role_family}_{ts}"
+    score_str = f"{score:02d}"  # garde 2 digits si tu veux 58 au lieu de 058
 
+    role_family = _slug(job_json.get("role_family") or "UNKNOWN")
+
+    ts = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d-%m-%y-%H-%M")
+
+    print("DEBUG BASENAME TZ PARIS:", ts)
+
+    return f"{score_str}_{role_family}_{ts}"
 
 # ======================
 # ANALYSIS ONLY
@@ -85,8 +100,8 @@ def run_analysis(job_json: dict) -> dict:
         return result
 
     score_result = compute_score(job_json)
-    result["score"] = score_result
-    result["decision"] = score_result.get("decision")
+    result["score"] = score_result["score_0_100"]
+    result["decision"] = score_result["decision"]
     result["status"] = "DONE"
 
     return result
@@ -96,60 +111,114 @@ def run_analysis(job_json: dict) -> dict:
 # GENERATE CV + PDF
 # ======================
 
-def run_generate_application(job_json: dict) -> dict:
+def run_generate_application(job_json: dict, email_application: bool = False) -> dict:
+
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    # Recompute score for naming
+    # ===== Recompute score (utile pour la lettre dynamique) =====
     score_result = compute_score(job_json)
-    basename = build_artifact_basename(job_json, score_result)
+    contact_email = job_json.get("contact_email")
 
-    # Template mapping
+    if contact_email:
+        email_subject = build_email_subject(job_json)
+        email_body = generate_email_body(job_json, score_result)
+    else:
+        email_subject = ""
+        email_body = ""
+    score_value = int(score_result.get("score_0_100") or 0)
+
+    # ===== Identifiants stables =====
+    row_index = job_json.get("row_index", "X")
+    base_template = select_template(job_json)
+
+    #print("ROLE TITLE IN JOB_JSON:", job_json.get("role_title"))
+    #print("CV TITLE OVERRIDE:", job_json.get("cv_title_override"))
+    #print("LANGUAGE IN JOB_JSON:", job_json.get("language"))
+
+    # ============================================================
+    # ======================= CV GENERATION ======================
+    # ============================================================
+
     template_result = map_template(job_json)
     template_path = Path("templates") / template_result["template_file"]
 
-    # Language strategy
-    language_config = determine_languages(job_json)
+    cv_title = job_json.get("cv_title_override") or build_cv_title(job_json)
 
-    # Application mode
-    mode_result = detect_application_mode(job_json)
-
-    # Patch CV
     generated_content = {
-        "cv_title": build_cv_title(job_json)
+        "cv_title": cv_title
     }
 
-    output_tex_path = artifacts_dir / f"{basename}.tex"
+    cv_tex_path = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.tex"
 
     patch_latex_cv(
         template_path=str(template_path),
-        output_path=str(output_tex_path),
+        output_path=str(cv_tex_path),
         generated_content=generated_content
     )
 
-    # Compile
-    compile_result = compile_latex(str(output_tex_path))
+    compile_result_cv = compile_latex(str(cv_tex_path))
 
-    pdf_path = compile_result.get("pdf_path")
-    final_pdf_path = None
+    cv_pdf_path = None
 
-    if pdf_path:
-        pdf_path = Path(pdf_path)
-        final_pdf_path = artifacts_dir / f"{basename}.pdf"
-        try:
-            if pdf_path.exists():
-                pdf_path.replace(final_pdf_path)
-                compile_result["pdf_path"] = str(final_pdf_path)
-        except Exception:
-            pass
+    if compile_result_cv.get("pdf_path"):
+        tmp_pdf = Path(compile_result_cv["pdf_path"])
+        final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"
+
+        if tmp_pdf.exists():
+            tmp_pdf.replace(final_cv_pdf)
+            cv_pdf_path = str(final_cv_pdf)
+
+    if email_application:
+        return {
+            "template": template_result,
+            "artifacts": {
+                "cv_pdf_path": cv_pdf_path,
+            },
+            "email": {
+                "subject": email_subject,
+                "body": email_body
+            }
+        }
+    # ============================================================
+    # ====================== LDM GENERATION ======================
+    # ============================================================
+
+    language = job_json.get("language", "EN")
+    print("LANGUAGE DETECTED:", language)
+
+    score_dict = {
+        "score_0_100": score_result.get("score_0_100", 0),
+        "top_reasons": score_result.get("top_reasons", [])
+    }
+
+    ldm_tex_content = generate_cover_letter_tex(job_json, score_dict)
+
+    ldm_tex_path = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.tex"
+    ldm_tex_path.write_text(ldm_tex_content, encoding="utf-8")
+
+    ldm_pdf_path = None
+
+    try:
+        compiled_ldm_pdf = compile_tex_to_pdf(ldm_tex_path)
+        final_ldm_pdf = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.pdf"
+        if compiled_ldm_pdf.exists():
+            compiled_ldm_pdf.replace(final_ldm_pdf)
+            ldm_pdf_path = str(final_ldm_pdf)
+
+    except Exception as e:
+        print("LDM compilation error:", str(e))
+
+    # ============================================================
 
     return {
         "template": template_result,
-        "languages": language_config,
-        "application_mode": mode_result,
         "artifacts": {
-            "tex_path": str(output_tex_path),
-            "pdf_path": compile_result.get("pdf_path"),
+            "cv_pdf_path": cv_pdf_path,
+            "ldm_pdf_path": ldm_pdf_path,
         },
-        "compile": compile_result,
+        "email": {
+            "subject": email_subject,
+            "body": email_body
+        }
     }

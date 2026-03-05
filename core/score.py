@@ -83,9 +83,9 @@ def compute_score(job_json: Dict) -> Dict:
     # 4️⃣ RISK ANALYTICS GRANULARITY
     # ======================
 
-    if "MARKET_RISK_ANALYTICS" in signals:
-        score += 10
-        contributions.append(("Market risk analytics", 10))
+    #if "MARKET_RISK_ANALYTICS" in signals:
+     #   score += 10
+      #  contributions.append(("Market risk analytics", 10))
 
     # ======================
     # 5️⃣ QUANT INTENSITY
@@ -101,6 +101,10 @@ def compute_score(job_json: Dict) -> Dict:
         score += 2
         contributions.append(("Moderate quant intensity", 2))
 
+    # 🔥 Boost stratégique pricing sérieux
+    if role_family == "PRICING" and quant_intensity >= 5:
+        score += 12
+        contributions.append(("High conviction pricing role", 12))
     # ======================
     # 6️⃣ CONVEXITY BONUS
     # ======================
@@ -109,9 +113,9 @@ def compute_score(job_json: Dict) -> Dict:
         score += 10
         contributions.append(("Opens trading & risk", 10))
 
-    if role_family in {"STRUCTURING", "PRICING"}:
-        score += 10
-        contributions.append(("Opens structuring & pricing", 10))
+    #if role_family in {"STRUCTURING", "PRICING"}:
+     #   score += 10
+      #  contributions.append(("Opens structuring & pricing", 10))
 
     if job_json.get("energy_derivatives") and "EXECUTION_ALGO_EXPOSURE" in signals:
         score += 12
@@ -143,20 +147,21 @@ def compute_score(job_json: Dict) -> Dict:
         score -= 10
 
     # ======================
-    # FINAL DECISION
+    # FINAL DECISION (Deterministic only)
     # ======================
 
     score = max(0, min(100, score))
 
-    if score >= 75:
+    if score >= 50:
         decision = "GREEN"
         main_risk = None
-    elif 55 <= score < 75:
-        decision = "BORDERLINE"
-        main_risk = "NEEDS_LLM_VALIDATE"
     else:
         decision = "RED"
         main_risk = "LOW_SCORE"
+
+    # ======================
+    # TOP CONTRIBUTIONS
+    # ======================
 
     contributions.sort(key=lambda x: x[1], reverse=True)
     top_reasons = [c[0] for c in contributions[:3]]

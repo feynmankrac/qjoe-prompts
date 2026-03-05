@@ -2,6 +2,16 @@ from typing import Dict, Any, List
 import re
 
 
+def extract_contact_email(raw_text: str):
+    if not raw_text:
+        return None
+
+    emails = re.findall(
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+        raw_text
+    )
+
+    return emails[0] if emails else None
 def load_prompt(prompt_path: str) -> str:
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read()
@@ -37,6 +47,7 @@ def _empty_extraction(raw_text: str) -> Dict[str, Any]:
         "tools": [],
         "red_flags": [],
         "signals_for_fit": [],
+        "team": None,
         "raw_text": raw_text,
     }
 
@@ -74,25 +85,20 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
             tools.append(name)
     base["tools"] = tools
 
-    # -----------------------------
-    # Python tooling core (signal autonome)
-    # -----------------------------
-    if "Python" in tools and _has_any(t, [
-        r"\bdevelop(ing)?\b",
-        r"\bbuild(ing)?\b",
-        r"\btool(s)?\b",
-        r"\bapplication(s)?\b",
-        r"\bframework\b",
-        r"\bplatform\b"
-    ]):
-        base["signals_for_fit"].append("TOOLING_PYTHON_CORE")
 
     # -----------------------------
     # BOOLEANS CORE
     # -----------------------------
     base["market_risk"] = _has_any(t, [
-        r"\bmarket risk\b", r"\bvar\b", r"\bstress test", r"\bstress testing\b",
-        r"\bsensitivity\b", r"\bbacktesting\b"
+        r"market\s*risk",                 # plus tolérant
+        r"\bvar\b",
+        r"\bstress test",
+        r"\bstress testing\b",
+        r"\brisk modelling\b",
+        r"\brisk modeling\b",
+        r"\brisk metrics?\b",
+        r"\bsensitivity\b",
+        r"\bbacktesting\b"
     ])
 
     base["counterparty_risk"] = _has_any(t, [
@@ -136,8 +142,11 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
     ]) and re.search(r"\bc\+\+\b", t) is not None)
 
     base["reporting_heavy"] = _has_any(t, [
-        r"\bkpi\b", r"\bdashboard\b", r"\breporting\b", r"\bmis\b", r"\bregulatory reporting\b",
-        r"\bmonthly report\b", r"\bweekly report\b", r"\bcommittee packs?\b"
+        r"\bkpi reporting\b",
+        r"\bregulatory reporting\b",
+        r"\breporting pack\b",
+        r"\bdashboard production\b",
+        r"\bmis reporting\b"
     ])
 
     # -----------------------------
@@ -273,30 +282,44 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
 
     if base["model_validation"]:
         role_family = "MODEL_RISK"
-    elif base["counterparty_risk"]:
-        role_family = "COUNTERPARTY_RISK"
-    elif base["market_risk"]:
-        role_family = "MARKET_RISK"
+
     elif base["derivatives_pricing"] and _has_any(t, [r"\bxva\b", r"\bcva\b", r"\bdva\b", r"\bfva\b"]):
         role_family = "XVA"
+
     elif base["derivatives_pricing"]:
         role_family = "PRICING"
-    elif _has_any(t, [r"\bstructuring\b", r"\bstructurer\b"]):
-        role_family = "STRUCTURING"
+
+    elif base["market_risk"]:
+        role_family = "MARKET_RISK"
+
     elif _has_any(t, [r"\btrading\b", r"\btrader\b"]):
         role_family = "TRADING"
+
+    elif _has_any(t, [r"\bstructuring\b", r"\bstructurer\b"]):
+        role_family = "STRUCTURING"
+
     elif _has_any(t, [r"\bvaluation\b", r"\bp&l\b", r"\bpnl\b", r"\bindependent price verification\b", r"\bipv\b"]):
         role_family = "P&L_VALUATION"
+
     elif _has_any(t, [r"\btooling\b", r"\bfront office tools\b", r"\btrade capture\b", r"\bpricing library\b"]):
         role_family = "FO_TOOLS"
+
     elif _has_any(t, [r"\bdata scientist\b", r"\bmachine learning\b", r"\bml\b", r"\bdata science\b"]):
         role_family = "DATA_SCIENCE"
+
+    # 🔥 Counterparty très bas (car tu ne veux pas ça)
+    elif base["counterparty_risk"]:
+        role_family = "COUNTERPARTY_RISK"
+
     elif _has_any(t, [r"\bproduct control\b"]):
         role_family = "PRODUCT_CONTROL"
+
     elif _has_any(t, [r"\bal m\b", r"\bal\-m\b", r"\basset liability\b"]):
         role_family = "ALM"
+
     elif _has_any(t, [r"\bcompliance\b", r"\bam l\b", r"\bkyt\b", r"\bkyc\b"]):
         role_family = "COMPLIANCE"
+
     elif _has_any(t, [r"\boperations?\b", r"\bsettlement\b", r"\breconciliation\b"]):
         role_family = "OPERATIONS"
 
@@ -386,26 +409,90 @@ def _deterministic_extract(raw_text: str) -> Dict[str, Any]:
         red_flags.add("CXX_HARDCORE")
     base["red_flags"] = sorted(red_flags)
 
+# ==============================
+# MISSIONS / REQUIREMENTS SPLIT
+# ==============================
+
+    lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
+
+    missions = []
+    requirements = []
+
+    mode = None
+
+    for l in lines:
+
+        low = l.lower()
+
+        if any(k in low for k in ["responsibilities", "key responsibilities", "missions", "your role"]):
+            mode = "missions"
+            continue
+
+        if any(k in low for k in ["requirements", "profile", "skills", "candidate"]):
+            mode = "requirements"
+            continue
+
+        if mode == "missions":
+            missions.append(l)
+
+        if mode == "requirements":
+            requirements.append(l)
+    # ==============================
+    # TEAM / DESK DETECTION
+    # ==============================
+
+    team_patterns = [
+        r"\bfx\b",
+        r"\bforeign exchange\b",
+        r"\bequity derivatives\b",
+        r"\bcommodities?\b",
+        r"\bpower\b",
+        r"\bgas\b",
+        r"\boil\b",
+        r"\brates?\b",
+        r"\bcredit\b",
+    ]
+
+    for pat in team_patterns:
+        if re.search(pat, t):
+            base["team"] = pat.replace("\\b", "").upper() + " desk"
+            break
+
+    base["key_missions"] = missions[:10]
+    base["key_requirements"] = requirements[:10]
+
     return base
 
 
 def extract_job(raw_text: str) -> Dict:
     deterministic = _deterministic_extract(raw_text)
 
+    # 👉 Ajout extraction email déterministe
+    deterministic["contact_email"] = extract_contact_email(raw_text)
+
     # LLM merge optionnel plus tard (ne bloque jamais)
     try:
         prompt_text = load_prompt("prompts/01_extract_job.md")
         full_prompt = prompt_text + "\n\nJOB_TEXT:\n" + raw_text
         llm_res = call_llm(full_prompt)
+
         if isinstance(llm_res, dict) and llm_res:
             for k, v in llm_res.items():
                 if k not in deterministic:
                     continue
                 if deterministic[k] in (None, [], False, 0) and v not in (None, [], ""):
                     deterministic[k] = v
+
     except NotImplementedError:
         pass
     except Exception:
         pass
+
+    # 🔒 Sécurité : garantir que le champ existe
+    if "contact_email" not in deterministic:
+        deterministic["contact_email"] = None
+    # DEBUG
+    print("MISSIONS:", deterministic.get("key_missions"))
+    print("REQUIREMENTS:", deterministic.get("key_requirements"))
 
     return deterministic
