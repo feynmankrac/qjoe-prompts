@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import time
+from core.logger import logger
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -35,7 +36,8 @@ def main():
 
         gmail_draft_link = ""
 
-        print("Processing row:", row)
+        logger.info(f"Processing row: {row}")
+        #print("Processing row:", row)
         print("RAW_DOMAIN:", job.get("raw_domain"))
         print("SCRAPING URL:", job["url"])
 
@@ -82,7 +84,8 @@ def main():
             score = result.get("score")
             decision = result.get("decision")
 
-            print("Decision:", decision)
+            logger.info(f"Decision: {decision}")
+            #print("Decision:", decision)
             print("Score:", score)
             print(f"Row {row} | {decision} | score={score}")
 
@@ -207,7 +210,8 @@ def main():
         except Exception as e:
             if not DRY_RUN:
                 update_engine_fields(SPREADSHEET_ID, row, "ERROR", "", "")
-            print("Unexpected error:", str(e))
+            logger.error(f"Unexpected error: {str(e)}")
+            #print("Unexpected error:", str(e))
 
 def retry_request(func, max_attempts=3, delay=2):
 
