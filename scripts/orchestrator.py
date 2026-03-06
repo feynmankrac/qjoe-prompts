@@ -32,6 +32,9 @@ def main():
 
     for job in jobs:
         row = job["row_index"]
+
+        gmail_draft_link = ""
+
         print("Processing row:", row)
         print("RAW_DOMAIN:", job.get("raw_domain"))
         print("SCRAPING URL:", job["url"])
