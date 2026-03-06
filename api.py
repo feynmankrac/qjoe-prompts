@@ -5,6 +5,8 @@ import os
 from core.gmail_draft import create_gmail_draft
 import subprocess
 from fastapi import BackgroundTasks
+from filelock import FileLock, Timeout
+import config
 
 from core.pipeline import run_analysis, run_generate_application
 from core.pipeline_text import run_analysis_from_text
@@ -148,14 +150,23 @@ def generate_spontaneous(req: SpontaneousRequest, x_api_key: str = Header(None))
     )
     return {"generation": generation}
 
+
 @app.post("/run_batch")
 def run_batch(background_tasks: BackgroundTasks):
 
     def run():
-        subprocess.run(
-            ["python", "scripts/orchestrator.py"],
-            cwd="/root/qjoe-prompts"
-        )
+
+        lock = FileLock(config.LOCK_PATH, timeout=1)
+
+        try:
+            with lock:
+                subprocess.run(
+                    ["python", "scripts/orchestrator.py"],
+                    cwd="/root/qjoe-prompts"
+                )
+
+        except Timeout:
+            print("Batch already running")
 
     background_tasks.add_task(run)
 
