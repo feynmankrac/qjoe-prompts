@@ -1,6 +1,10 @@
 import sys
 from pathlib import Path
 import time
+
+# add project root to python path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from core.logger import logger
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
