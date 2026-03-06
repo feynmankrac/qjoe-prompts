@@ -1,0 +1,108 @@
+import os
+import sys
+import requests
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+import config
+from filelock import FileLock, Timeout
+
+from infra.sheet_client import get_contacts_rows, update_contacts_fields
+from config import GOOGLE_SHEET_ID
+
+
+API_BASE = os.getenv("QJOE_API_BASE", "http://localhost:8000")
+DRY_RUN = os.getenv("DRY_RUN", "0") == "1"
+
+def main():
+    contacts = get_contacts_rows()  # doit renvoyer liste dict: row, company, email, first_name, desk, status
+
+    headers = {}
+    token = os.getenv("QJOE_API_TOKEN")
+    if token:
+        headers["x-api-key"] = token
+
+    for c in contacts:
+        row = c["row"]
+        status = c.get("status") or ""
+
+        if status in ("DONE", "DONE_GREEN", "ready", "ERROR"):
+            continue
+
+        company = c.get("company") or ""
+        to_email = c.get("email") or ""
+        first_name = c.get("first_name")
+        desk = c.get("desk") or ""
+        language = c.get("language") or "EN"
+
+        if not to_email:
+            update_contacts_fields(row, "SKIP_NO_EMAIL", "", "")
+            continue
+
+        if "@" not in to_email:
+            update_contacts_fields(row, "SKIP_INVALID_EMAIL", "", "")
+            continue
+
+        print("Processing:", company, "| row:", row)
+
+        gen = requests.post(
+            f"{API_BASE}/generate_spontaneous",
+            json={
+                "company": company,
+                "to_email": to_email,
+                "first_name": first_name,
+                "desk": desk,
+                "language": language,
+            },
+            headers=headers,
+            timeout=60,
+        )
+        gen.raise_for_status()
+        g = gen.json()["generation"]
+
+        cv_local_path = g["artifacts"]["cv_pdf_path"]
+        email_subject = g["email"]["subject"]
+        email_body = g["email"]["body"]
+
+        gmail_link = ""
+        cv_link = ""
+
+        # create draft gmail + attach cv
+        if not DRY_RUN and cv_local_path:
+            r = requests.post(
+                f"{API_BASE}/create_gmail_draft",
+                json={
+                    "to_email": to_email,
+                    "subject": email_subject,
+                    "body": email_body,
+                    "attachment_path": cv_local_path
+                },
+                headers=headers,
+                timeout=60,
+            )
+            r.raise_for_status()
+            draft_id = r.json()["draft"]["id"]
+            gmail_link = f'=HYPERLINK("https://mail.google.com/mail/u/1/#drafts?compose={draft_id}";"open")'
+        else:
+            gmail_link = "DRY_RUN"
+
+        # write sheet
+        cv_cell = ""
+
+        update_contacts_fields(row, "ready", cv_cell, gmail_link)
+
+        # cleanup local
+        if cv_local_path and os.path.exists(cv_local_path):
+            os.remove(cv_local_path)
+
+if __name__ == "__main__":
+
+    lock = FileLock(config.LOCK_PATH, timeout=1)
+
+    try:
+        with lock:
+            main()
+
+    except Timeout:
+        print("Batch already running. Exiting.")

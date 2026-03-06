@@ -54,6 +54,11 @@ def create_gmail_draft(
 
     raw = _to_rfc2822_base64url(msg)
 
+    print("TO:", to_email)
+    print("SUBJECT:", subject)
+    print("BODY:", body[:100])
+    print("ATTACHMENT:", attachment_path)
+
     draft = svc.users().drafts().create(
         userId="me",
         body={"message": {"raw": raw}},

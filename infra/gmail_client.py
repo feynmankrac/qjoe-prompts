@@ -9,7 +9,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-SCOPES: List[str] = ["https://www.googleapis.com/auth/gmail.compose"]
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/gmail.readonly"
+]
 
 
 def _load_creds(

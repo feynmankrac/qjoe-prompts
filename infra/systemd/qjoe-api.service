@@ -1,0 +1,14 @@
+[Unit]
+Description=QJOE API
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/qjoe
+EnvironmentFile=/opt/qjoe/.env
+ExecStart=/opt/qjoe/venv/bin/uvicorn api:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

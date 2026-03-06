@@ -1,0 +1,8 @@
+[Unit]
+Description=QJOE Job Batch
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/qjoe
+EnvironmentFile=/opt/qjoe/.env
+ExecStart=/opt/qjoe/venv/bin/python scripts/orchestrator.py

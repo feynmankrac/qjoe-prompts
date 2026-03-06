@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import os
 from core.gmail_draft import create_gmail_draft
 
@@ -9,11 +9,19 @@ from core.pipeline_text import run_analysis_from_text
 
 from pydantic import BaseModel
 
+
 class GmailDraftRequest(BaseModel):
     to_email: str
     subject: str
     body: str
-    attachment_path: str | None = None
+    attachment_path: Optional[str] = None
+
+class SpontaneousRequest(BaseModel):
+    company: str
+    to_email: str
+    first_name: Optional[str] = None
+    desk: str
+    language: str = "EN"
 
 app = FastAPI(title="QJOE Engine")
 
@@ -122,3 +130,18 @@ def create_gmail_draft_endpoint(req: GmailDraftRequest):
         token_path=token_path,
     )
     return {"ok": True, "draft": draft}
+
+from core.spontaneous import run_generate_spontaneous_application
+
+@app.post("/generate_spontaneous")
+def generate_spontaneous(req: SpontaneousRequest, x_api_key: str = Header(None)):
+    verify_token(x_api_key)
+
+    generation = run_generate_spontaneous_application(
+        company=req.company,
+        to_email=req.to_email,
+        first_name=req.first_name,
+        desk=req.desk,
+        language=req.language
+    )
+    return {"generation": generation}

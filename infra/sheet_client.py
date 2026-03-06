@@ -1,6 +1,17 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+from config import GOOGLE_SHEET_ID
+
+load_dotenv()
+
+
+from google.oauth2.service_account import Credentials
+
+#SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SERVICE_ACCOUNT_FILE = BASE_DIR / "secrets" / "qjoe-service-account.json"
@@ -93,6 +104,110 @@ def update_engine_fields(spreadsheet_id, row, status, cv, ldm, draft=""):
         "valueInputOption": "USER_ENTERED",
         "data": updates,
     }
+
+    sheet.values().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body=body
+    ).execute()
+
+def get_contacts_rows():
+
+    spreadsheet_id = GOOGLE_SHEET_ID
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    sheet_name = "CONTACTS"
+
+    # Adapte le range: suppose header en ligne 1, data dès ligne 2
+    resp = sheet.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A5:E"
+    ).execute()
+
+    values = resp.get("values", [])
+    out = []
+    row_index = 5
+    for v in values:
+        company = v[0] if len(v) > 0 else ""
+        email = v[1] if len(v) > 1 else ""
+        first_name = v[2] if len(v) > 2 else ""
+        desk = v[3] if len(v) > 3 else ""
+        language = v[4] if len(v) > 4 else "EN"
+        status = v[5] if len(v) > 5 else ""
+        out.append({
+            "row": row_index,
+            "company": company,
+            "email": email,
+            "first_name": first_name,
+            "desk": desk,
+            "status": status,
+            "language": language,
+        })
+        row_index += 1
+    return out
+
+def update_contacts_fields(row, status, cv_cell, draft_cell, spreadsheet_id=None, sheet_name="CONTACTS"):
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    from dotenv import load_dotenv
+    import os
+
+    if spreadsheet_id is None:
+        spreadsheet_id = GOOGLE_SHEET_ID
+
+    updates = [
+        {"range": f"{sheet_name}!F{row}", "values": [[status]]},        # status
+        {"range": f"{sheet_name}!G{row}", "values": [[draft_cell]]},    # draft_link
+        #{"range": f"{sheet_name}!I{row}", "values": [["SENT"]]},        # delivery_status
+    ]
+
+    body = {"valueInputOption": "USER_ENTERED", "data": updates}
+
+    sheet.values().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body=body
+    ).execute()
+
+
+def update_bounce(row, spreadsheet_id=None, sheet_name="CONTACTS"):
+
+    from dotenv import load_dotenv
+    import os
+
+    if spreadsheet_id is None:
+        spreadsheet_id = GOOGLE_SHEET_ID
+
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    updates = [
+        {"range": f"{sheet_name}!J{row}", "values": [["BOUNCED"]]},
+    ]
+
+    body = {"valueInputOption": "USER_ENTERED", "data": updates}
+
+    sheet.values().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body=body
+    ).execute()
+
+def update_delivery_status(row, status, spreadsheet_id=None, sheet_name="CONTACTS"):
+
+    from dotenv import load_dotenv
+    import os
+
+    if spreadsheet_id is None:
+        spreadsheet_id = GOOGLE_SHEET_ID
+
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    updates = [
+        {"range": f"{sheet_name}!I{row}", "values": [[status]]},
+    ]
+
+    body = {"valueInputOption": "USER_ENTERED", "data": updates}
 
     sheet.values().batchUpdate(
         spreadsheetId=spreadsheet_id,
