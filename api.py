@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 from core.gmail_draft import create_gmail_draft
+import subprocess
+from fastapi import BackgroundTasks
 
 from core.pipeline import run_analysis, run_generate_application
 from core.pipeline_text import run_analysis_from_text
@@ -145,3 +147,16 @@ def generate_spontaneous(req: SpontaneousRequest, x_api_key: str = Header(None))
         language=req.language
     )
     return {"generation": generation}
+
+@app.post("/run_batch")
+def run_batch(background_tasks: BackgroundTasks):
+
+    def run():
+        subprocess.run(
+            ["python", "scripts/orchestrator.py"],
+            cwd="/root/qjoe-prompts"
+        )
+
+    background_tasks.add_task(run)
+
+    return {"status": "batch started"}
