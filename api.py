@@ -173,3 +173,27 @@ def run_batch(background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
     background_tasks.add_task(run)
 
     return {"status": "batch started"}
+
+@app.post("/run_spontaneous")
+def run_spontaneous(background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
+
+    if API_TOKEN and x_api_key != API_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    def run():
+
+        lock = FileLock(config.LOCK_PATH, timeout=1)
+
+        try:
+            with lock:
+                subprocess.run(
+                    ["python", "scripts/orchestrator_spontaneous.py"],
+                    cwd="/root/qjoe-prompts"
+                )
+
+        except Timeout:
+            print("Batch already running")
+
+    background_tasks.add_task(run)
+
+    return {"status": "spontaneous batch started"}
