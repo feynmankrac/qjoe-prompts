@@ -152,7 +152,9 @@ def generate_spontaneous(req: SpontaneousRequest, x_api_key: str = Header(None))
 
 
 @app.post("/run_batch")
-def run_batch(background_tasks: BackgroundTasks):
+def run_batch(background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
+    if API_TOKEN and x_api_key != API_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     def run():
 
