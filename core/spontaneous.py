@@ -31,6 +31,9 @@ def desk_to_cv_title(desk: str) -> str:
 
     return mapping.get(desk, desk.replace("_", " ").title())
 
+def desk_to_human(desk: str) -> str:
+    return desk.replace("_", " ").title()
+
 
 def build_spontaneous_email_subject(company: str, desk: str, language: str) -> str:
     if (language or "EN").upper().startswith("FR"):
@@ -46,8 +49,8 @@ def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[s
     if (language or "EN").upper().startswith("FR"):
         return (
             f"{hello}\n\n"
-            f"Je me permets de vous contacter pour une candidature spontanée au sein de {company}, "
-            f"sur un périmètre {desk}.\n\n"
+            f"Je me permets de vous contacter pour une candidature spontanée "
+            f"au sein de vos activités de {desk.lower()}.\n\n"
             f"Je suis diplômé d’un Master 2 en finance quantitative et je souhaite évoluer dans un environnement rigoureux "
             f"où la modélisation et les produits dérivés sont centraux.\n\n"
             f"Vous trouverez mon CV en pièce jointe. Je serais ravi d’échanger si mon profil correspond à vos besoins.\n\n"
@@ -57,7 +60,7 @@ def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[s
 
     return (
         f"{hello}\n\n"
-        f"I’m reaching out with a spontaneous application to {company}, regarding opportunities within your {desk.replace("_"," ").lower()} activities.\n\n"
+        f"I’m reaching out with a spontaneous application to {company}, regarding opportunities within your {desk.lower()} activities.\n\n"
         f"I hold a Master’s degree (M2) in Quantitative Finance and I’m looking to join a rigorous environment "
         f"where modelling and derivatives are central.\n\n"
         f"Please find my CV attached. I would be happy to discuss if my profile matches your needs.\n\n"
@@ -82,6 +85,7 @@ def run_generate_spontaneous_application(
 
     # Normalise le desk venant du Sheet
     desk = (desk or "").upper().strip()
+    desk_label = desk_to_human(desk)
 
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -137,8 +141,10 @@ def run_generate_spontaneous_application(
             tmp_pdf.replace(final_cv_pdf)
             cv_pdf_path = str(final_cv_pdf)
 
-    email_subject = build_spontaneous_email_subject(company, desk, language)
-    email_body = build_spontaneous_email_body(company, desk, first_name, language)
+    #email_subject = build_spontaneous_email_subject(company, desk, language)
+    email_subject = build_spontaneous_email_subject(company, desk_label, language)
+    #email_body = build_spontaneous_email_body(company, desk, first_name, language)
+    email_body = build_spontaneous_email_body(company, desk_label, first_name, language)
 
     return {
         "template": template_result,
