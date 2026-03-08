@@ -2,6 +2,8 @@ import os
 import sys
 import requests
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
