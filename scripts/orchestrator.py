@@ -76,7 +76,12 @@ def main():
             payload = {"job_text": scraped_text}
             headers = {"x-api-key": "devtoken"}
 
+            #response = requests.post(API_URL, json=payload, headers=headers, timeout=20)
+            print("CALLING ANALYZE API")
+
             response = requests.post(API_URL, json=payload, headers=headers, timeout=20)
+
+            print("API RESPONSE RECEIVED")
 
             if response.status_code != 200:
                 if not DRY_RUN:
