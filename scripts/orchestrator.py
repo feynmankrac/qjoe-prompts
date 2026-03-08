@@ -198,6 +198,7 @@ def main():
                 status = "DONE_RED"
                 cv_name = ""
                 ldm_name = ""
+                gmail_draft_link = ""
                 print(f"Row {row} | {decision} | score={score}")
                 #print(result["job_json"])
 
@@ -211,8 +212,11 @@ def main():
                     gmail_draft_link
                 )
 
+        import traceback
+
         except Exception as e:
-            print("ERROR:",str(e))
+            print("ERROR:", str(e))
+            traceback.print_exc()
             if not DRY_RUN:
                 update_engine_fields(SPREADSHEET_ID, row, "ERROR", "", "")
             logger.error(f"Unexpected error: {str(e)}")
