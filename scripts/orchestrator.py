@@ -177,8 +177,8 @@ def main():
                         ldm_file = Path(ldm_local_path).name
                         ldm_name = f'=HYPERLINK("{drive_link_ldm}";"{ldm_file}")'
 
-                    cv_name = f'=HYPERLINK("{drive_link_cv}";"{cv_file}")'
-                    ldm_name = f'=HYPERLINK("{drive_link_ldm}";"{ldm_file}")'
+                    #cv_name = f'=HYPERLINK("{drive_link_cv}";"{cv_file}")'
+                    #ldm_name = f'=HYPERLINK("{drive_link_ldm}";"{ldm_file}")'
 
                     status = "DONE_GREEN"
 
@@ -212,6 +212,7 @@ def main():
                 )
 
         except Exception as e:
+            print("ERROR:",str(e))
             if not DRY_RUN:
                 update_engine_fields(SPREADSHEET_ID, row, "ERROR", "", "")
             logger.error(f"Unexpected error: {str(e)}")
