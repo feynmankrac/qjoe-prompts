@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import time
+import traceback
 
 # add project root to python path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -211,8 +212,6 @@ def main():
                     ldm_name,
                     gmail_draft_link
                 )
-
-        import traceback
 
         except Exception as e:
             print("ERROR:", str(e))
