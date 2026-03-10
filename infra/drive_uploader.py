@@ -33,7 +33,7 @@ def get_drive_service():
                 CREDENTIALS_FILE, SCOPES
             )
             #creds = flow.run_local_server(port=0)
-            creds = flow.run_console()
+            creds = flow.run_local_server(host="0.0.0.0", port=8080)
 
         with open(TOKEN_FILE, "wb") as token:
             pickle.dump(creds, token)
