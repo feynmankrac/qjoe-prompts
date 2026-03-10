@@ -80,20 +80,20 @@ def main():
                 scraped_text = scraped["text"]
 
             # ANTI DUPLICATE
-            job_hash = hash_job(scraped_text)
-
-            if job_hash in memory:
-                logger.info("Duplicate job skipped")
-                if not DRY_RUN:
-                    update_engine_fields(
-                    SPREADSHEET_ID,
-                    row,
-                    "DEJA_VU",
-                    "",
-                    "",
-                    ""
-                    )
-                continue
+            # job_hash = hash_job(scraped_text)
+            #
+            # if job_hash in memory:
+            #     logger.info("Duplicate job skipped")
+            #     if not DRY_RUN:
+            #         update_engine_fields(
+            #         SPREADSHEET_ID,
+            #         row,
+            #         "DEJA_VU",
+            #         "",
+            #         "",
+            #         ""
+            #         )
+            #     continue
 
             # Payload API
             payload = {"job_text": scraped_text}
@@ -145,7 +145,7 @@ def main():
                 is_email_application = bool(contact_email)
 
                 gen_response = retry_request(
-                    lambda: requests.post(            
+                    lambda: requests.post(
                         "http://localhost:8000/generate_application",
                         json={
                             "job_json": job_json,

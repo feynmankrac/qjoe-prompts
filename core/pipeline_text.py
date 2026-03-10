@@ -9,8 +9,11 @@ def run_analysis_from_text(job_text: str) -> dict:
 
     analysis = run_analysis(normalized)
 
+    if not analysis:
+        analysis = {}
+
     return {
         "job_json": normalized,
-        "decision": analysis["decision"],
-        "score": analysis["score"]
+        "decision": analysis.get("decision"),
+        "score": analysis.get("score")
     }
