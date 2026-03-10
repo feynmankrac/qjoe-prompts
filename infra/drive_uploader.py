@@ -33,7 +33,13 @@ def get_drive_service():
                 CREDENTIALS_FILE, SCOPES
             )
             #creds = flow.run_local_server(port=0)
-            creds = flow.run_local_server(host="0.0.0.0", port=8080)
+            auth_url, _ = flow.authorization_url(prompt="consent")
+            print("OPEN THIS URL:", auth_url)
+
+            code = input("Enter the authorization code: ")
+
+            flow.fetch_token(code=code)
+            creds = flow.credentials
 
         with open(TOKEN_FILE, "wb") as token:
             pickle.dump(creds, token)
