@@ -133,14 +133,18 @@ def run_generate_spontaneous_application(
     compile_result_cv = compile_latex(str(cv_tex_path))
 
     cv_pdf_path = None
-    if compile_result_cv.get("pdf_path"):
+    if not compile_result_cv.get("success"):
+        print("COMPILE ERROR:", compile_result_cv)
+
+    elif compile_result_cv.get("pdf_path"):
         tmp_pdf = Path(compile_result_cv["pdf_path"])
         safe_company = "".join([c for c in company if c.isalnum()])
         final_cv_pdf = artifacts_dir / f"Ely_Henry_cv_{safe_company}.pdf"
-        if tmp_pdf.exists():
-            tmp_pdf.replace(final_cv_pdf)
-            cv_pdf_path = str(final_cv_pdf)
 
+        if tmp_pdf.exists():
+            tmp_pdf.rename(final_cv_pdf)
+            cv_pdf_path = str(final_cv_pdf)
+    
     #email_subject = build_spontaneous_email_subject(company, desk, language)
     email_subject = build_spontaneous_email_subject(company, desk_label, language)
     #email_body = build_spontaneous_email_body(company, desk, first_name, language)

@@ -2,11 +2,14 @@ import sys
 from pathlib import Path
 import time
 import traceback
+from cleanup_artifacts import *
 
 # add project root to python path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from core.logger import logger
+from core.logger import get_logger
+
+logger = get_logger("batch", "batch.log")
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -19,12 +22,15 @@ from infra.sheet_client import get_jobs_to_process, update_engine_fields
 from scraping.scraper import scrape_url
 from infra.drive_uploader import upload_to_drive
 from pathlib import Path
+from core.job_memory import load_memory, save_memory, hash_job
 import os
 
 SPREADSHEET_ID = "10DSDAsJpXWmdpafk-MlG_FXA-5-idxnlzuWLY83G7Kk"
 API_URL = "http://localhost:8000/analyze_text"
 
 def main():
+    memory = load_memory()
+    logger.info("Batch started")
 
     jobs = get_jobs_to_process(
         SPREADSHEET_ID,
@@ -37,6 +43,7 @@ def main():
         return
 
     for job in jobs:
+        job_hash = None
         row = job["row_index"]
 
         gmail_draft_link = ""
@@ -72,16 +79,34 @@ def main():
 
                 scraped_text = scraped["text"]
 
+            # ANTI DUPLICATE
+            job_hash = hash_job(scraped_text)
+
+            if job_hash in memory:
+                logger.info("Duplicate job skipped")
+                if not DRY_RUN:
+                    update_engine_fields(
+                    SPREADSHEET_ID,
+                    row,
+                    "DEJA_VU",
+                    "",
+                    "",
+                    ""
+                    )
+                continue
+
             # Payload API
             payload = {"job_text": scraped_text}
-            headers = {"x-api-key": "devtoken"}
+            headers = {"x-api-key": os.getenv("QJOE_API_TOKEN")}
 
             #response = requests.post(API_URL, json=payload, headers=headers, timeout=20)
             print("CALLING ANALYZE API")
 
             response = requests.post(API_URL, json=payload, headers=headers, timeout=20)
+            response.raise_for_status()
 
             print("API RESPONSE RECEIVED")
+           # print(response.json())
 
             if response.status_code != 200:
                 if not DRY_RUN:
@@ -120,7 +145,7 @@ def main():
                 is_email_application = bool(contact_email)
 
                 gen_response = retry_request(
-                    lambda: requests.post(
+                    lambda: requests.post(            
                         "http://localhost:8000/generate_application",
                         json={
                             "job_json": job_json,
@@ -130,6 +155,8 @@ def main():
                         timeout=30
                     )
                 )
+
+                gen_response.raise_for_status()
 
                 if gen_response.status_code == 200:
                     gen_result = gen_response.json()
@@ -161,6 +188,8 @@ def main():
                                 timeout=30
                             )
                         )
+
+                        gmail_response.raise_for_status()
 
                         if gmail_response.status_code == 200:
                             draft_id = gmail_response.json()["draft"]["id"]
@@ -217,6 +246,10 @@ def main():
                     ldm_name,
                     gmail_draft_link
                 )
+            if job_hash:
+                logger.info(f"Saving job hash: {job_hash}")
+                memory.add(job_hash)
+                save_memory(memory)
 
         except Exception as e:
             print("ERROR:", str(e))
@@ -243,12 +276,4 @@ def retry_request(func, max_attempts=3, delay=2):
 
 
 if __name__ == "__main__":
-
-    lock = FileLock(config.LOCK_PATH, timeout=1)
-
-    try:
-        with lock:
-            main()
-
-    except Timeout:
-        print("Batch already running. Exiting.")
+    main()

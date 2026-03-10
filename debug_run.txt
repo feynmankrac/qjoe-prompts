@@ -1,0 +1,11 @@
+Found 2 jobs to process
+RAW_DOMAIN: Quantitative Research Internship
+SCRAPING URL: https://www.linkedin.com/jobs/view/4290877617/?trk=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_0_jobid_4290877617_ssid_8472672186_fmid_7x7nxk~mmhsnw0c~ro&refId=KxBlucxAUwmo6d9PYWtm7Q%3D%3D&trackingId=%2FpYSbwy3AwRPnWHWXar%2BmA%3D%3D
+Using RAW_TEXT from sheet
+CALLING ANALYZE API
+API RESPONSE RECEIVED
+RAW_DOMAIN: quant research
+SCRAPING URL: https://www.linkedin.com/jobs/view/4381909612/?trk=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_0_jobid_4381909612_ssid_8485935730_fmid_7x7nxk~mmhbill8~hf&refId=yxlzpzFYoYwODV%2BeZHYZ1A%3D%3D&trackingId=Nr6sNOnC6ry3SO2RBxm0Tg%3D%3D
+Using RAW_TEXT from sheet
+CALLING ANALYZE API
+API RESPONSE RECEIVED

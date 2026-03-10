@@ -12,7 +12,9 @@ from core.pipeline import run_analysis, run_generate_application
 from core.pipeline_text import run_analysis_from_text
 
 from pydantic import BaseModel
+from core.logger import get_logger
 
+logger = get_logger("api", "api.log")
 
 class GmailDraftRequest(BaseModel):
     to_email: str
@@ -182,41 +184,11 @@ def run_spontaneous(background_tasks: BackgroundTasks, x_api_key: str = Header(N
 
     def run():
 
-        lock = FileLock(config.LOCK_PATH, timeout=1)
-
-        try:
-            with lock:
-                subprocess.run(
-                    ["python", "scripts/orchestrator_spontaneous.py"],
-                    cwd="/root/qjoe-prompts"
-                )
-
-        except Timeout:
-            print("Batch already running")
-
-    background_tasks.add_task(run)
-
-    return {"status": "spontaneous batch started"}
-
-@app.post("/run_spontaneous")
-def run_spontaneous(background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
-
-    if API_TOKEN and x_api_key != API_TOKEN:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    def run():
-
-        lock = FileLock(config.LOCK_PATH, timeout=1)
-
-        try:
-            with lock:
-                subprocess.run(
-                    ["python", "scripts/orchestrator_spontaneous.py"],
-                    cwd="/root/qjoe-prompts"
-                )
-
-        except Timeout:
-            print("Batch already running")
+        subprocess.run(
+            ["/root/qjoe-prompts/venv/bin/python", "scripts/orchestrator_spontaneous.py"],
+            cwd="/root/qjoe-prompts",
+            env={**os.environ}
+        )
 
     background_tasks.add_task(run)
 

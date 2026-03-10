@@ -8,8 +8,6 @@ from config import GOOGLE_SHEET_ID
 load_dotenv()
 
 
-from google.oauth2.service_account import Credentials
-
 #SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 
 
@@ -28,16 +26,42 @@ def get_service():
     service = build("sheets", "v4", credentials=creds)
     return service
 
-
-def get_new_jobs(spreadsheet_id, range_name="jobs!A2:D100"):
+def get_new_jobs(spreadsheet_id, sheet_name="2026"):
     service = get_service()
     sheet = service.spreadsheets()
+
     result = sheet.values().get(
         spreadsheetId=spreadsheet_id,
-        range=range_name
+        range=f"{sheet_name}!A6:Z"
     ).execute()
 
-    return result.get("values", [])
+    values = result.get("values", [])
+
+    if not values:
+        return []
+
+    headers = values[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def get(row, name):
+        i = header_index.get(name)
+        return row[i] if i is not None and len(row) > i else ""
+
+    jobs = []
+
+    for i, row in enumerate(values[1:]):
+        jobs.append({
+            "company": get(row, "ENTREPRISE"),
+            "poste": get(row, "POSTE"),
+            "contrat": get(row, "CONTRAT"),
+            "lieu": get(row, "LIEU"),
+            "lien": get(row, "LIEN"),
+            "raw_text": get(row, "RAW_TEXT"),
+            "langue": get(row, "LANGUE"),
+            "status": get(row, "STATUS")
+        })
+
+    return jobs
 
 
 def get_jobs_to_process(spreadsheet_id, status="NEW"):
@@ -46,59 +70,100 @@ def get_jobs_to_process(spreadsheet_id, status="NEW"):
 
     result = sheet.values().get(
         spreadsheetId=spreadsheet_id,
-        range="2026!A7:S"
+        range="2026!A6:Z"
     ).execute()
 
     values = result.get("values", [])
     jobs = []
 
-    for i, row in enumerate(values):
+    if not values:
+        return []
+    headers = values[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def get(row, name):
+        i = header_index.get(name)
+        return row[i] if i is not None and len(row) > i else ""
+
+    for i, row in enumerate(values[1:]):
         row_number = 7 + i
 
-        col_A = row[0] if len(row) > 0 else ""
-        col_C = row[2] if len(row) > 2 else ""
-        col_D = row[3] if len(row) > 3 else ""
-        col_F = row[5] if len(row) > 5 else ""
-        col_M = row[12] if len(row) > 12 else ""
-        col_P = row[15] if len(row) > 15 else ""
-        col_S = row[18] if len(row) > 18 else ""
+        company = get(row, "ENTREPRISE")
+        poste = get(row, "POSTE")
+        url = get(row, "LIEN")
+       # engine_status = get(row, "STATUS")
+        language = get(row, "LANGUE")
+        raw_text = get(row, "RAW_TEXT")
+        postule = get(row, "Apply").strip().upper()
+        engine_status = get(row, "STATUS")
 
-        if col_A == "NON" and col_D and col_F and col_M in ["", status]:
+#        print("DEBUG:", row_number, postule, poste, engine_status)
+
+        if postule == "NON" and poste and not engine_status:
+
+
             jobs.append({
                 "row_index": row_number,
-                "company": col_C,
-                "url": col_F,
-                "raw_domain": col_D,
-                "language": col_P,
-                "raw_text": col_S
+                "company": company,
+                "url": url,
+                "raw_domain": poste,
+                "language": language,
+                "raw_text": raw_text
             })
+
     print(f"Found {len(jobs)} jobs to process")
 
     return jobs
-
 
 def update_engine_fields(spreadsheet_id, row, status, cv, ldm, draft=""):
     service = get_service()
     sheet = service.spreadsheets()
 
-    updates = [
-        {
-            "range": f"2026!M{row}",  # Status
+    # récupérer headers
+    resp = sheet.values().get(
+        spreadsheetId=spreadsheet_id,
+        range="2026!A6:Z6"
+    ).execute()
+
+    headers = resp.get("values", [[]])[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def col_letter(name):
+        i = header_index.get(name)
+        if i is None:
+            return None
+        return chr(ord('A') + i)
+
+    status_col = col_letter("STATUS")
+    cv_col = col_letter("CV_File")
+    ldm_col = col_letter("LDM_file")
+    draft_col = col_letter("Email_body")
+
+    updates = []
+
+    if status_col:
+        updates.append({
+            "range": f"2026!{status_col}{row}",
             "values": [[status]],
-        },
-        {
-            "range": f"2026!N{row}",  # CV hyperlink
+        })
+
+    if cv_col:
+        updates.append({
+            "range": f"2026!{cv_col}{row}",
             "values": [[cv]],
-        },
-        {
-            "range": f"2026!O{row}",  # LDM hyperlink
+        })
+
+    if ldm_col:
+        updates.append({
+            "range": f"2026!{ldm_col}{row}",
             "values": [[ldm]],
-        },
-        {
-            "range": f"2026!P{row}",  # Gmail draft
+        })
+
+    if draft_col:
+        updates.append({
+            "range": f"2026!{draft_col}{row}",
             "values": [[draft]],
-        },
-    ]
+        })
 
     body = {
         "valueInputOption": "USER_ENTERED",
@@ -110,6 +175,7 @@ def update_engine_fields(spreadsheet_id, row, status, cv, ldm, draft=""):
         body=body
     ).execute()
 
+
 def get_contacts_rows():
 
     spreadsheet_id = GOOGLE_SHEET_ID
@@ -118,72 +184,127 @@ def get_contacts_rows():
 
     sheet_name = "CONTACTS"
 
-    # Adapte le range: suppose header en ligne 1, data dès ligne 2
     resp = sheet.values().get(
         spreadsheetId=spreadsheet_id,
-        range=f"{sheet_name}!A5:E"
+        range=f"{sheet_name}!A4:F"
     ).execute()
 
     values = resp.get("values", [])
     out = []
+
+    headers = values[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def get(row, name):
+        i = header_index.get(name)
+        return row[i] if i is not None and len(row) > i else ""
+
     row_index = 5
-    for v in values:
-        company = v[0] if len(v) > 0 else ""
-        email = v[1] if len(v) > 1 else ""
-        first_name = v[2] if len(v) > 2 else ""
-        desk = v[3] if len(v) > 3 else ""
-        language = v[4] if len(v) > 4 else "EN"
-        status = v[5] if len(v) > 5 else ""
+
+    for v in values[1:]:
+
+        company = get(v, "company")
+        email = get(v, "email")
+        first_name = get(v, "first_name")
+        desk = get(v, "desk")
+        language = get(v, "language") or "EN"
+        status = get(v, "status")
+
         out.append({
             "row": row_index,
             "company": company,
             "email": email,
             "first_name": first_name,
             "desk": desk,
-            "status": status,
             "language": language,
+            "status": status,
         })
+
         row_index += 1
+
     return out
+
 
 def update_contacts_fields(row, status, cv_cell, draft_cell, spreadsheet_id=None, sheet_name="CONTACTS"):
     service = get_service()
     sheet = service.spreadsheets()
 
-    from dotenv import load_dotenv
-    import os
-
     if spreadsheet_id is None:
         spreadsheet_id = GOOGLE_SHEET_ID
 
-    updates = [
-        {"range": f"{sheet_name}!F{row}", "values": [[status]]},        # status
-        {"range": f"{sheet_name}!G{row}", "values": [[draft_cell]]},    # draft_link
-        #{"range": f"{sheet_name}!I{row}", "values": [["SENT"]]},        # delivery_status
-    ]
+    # récupérer les headers
+    resp = sheet.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A4:Z4"
+    ).execute()
 
-    body = {"valueInputOption": "USER_ENTERED", "data": updates}
+    headers = resp.get("values", [[]])[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def col_letter(name):
+        i = header_index.get(name)
+        if i is None:
+            return None
+        return chr(ord('A') + i)
+
+    status_col = col_letter("status")
+    draft_col = col_letter("draft_link")
+
+    updates = []
+
+    if status_col:
+        updates.append({
+            "range": f"{sheet_name}!{status_col}{row}",
+            "values": [[status]]
+        })
+
+    if draft_col:
+        updates.append({
+            "range": f"{sheet_name}!{draft_col}{row}",
+            "values": [[draft_cell]]
+        })
+
+    body = {
+        "valueInputOption": "USER_ENTERED",
+        "data": updates
+    }
 
     sheet.values().batchUpdate(
         spreadsheetId=spreadsheet_id,
         body=body
     ).execute()
-
 
 def update_bounce(row, spreadsheet_id=None, sheet_name="CONTACTS"):
 
-    from dotenv import load_dotenv
-    import os
-
     if spreadsheet_id is None:
         spreadsheet_id = GOOGLE_SHEET_ID
 
     service = get_service()
     sheet = service.spreadsheets()
 
-    updates = [
-        {"range": f"{sheet_name}!J{row}", "values": [["BOUNCED"]]},
-    ]
+    resp = sheet.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A4:Z4"
+    ).execute()
+
+    headers = resp.get("values", [[]])[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def col_letter(name):
+        i = header_index.get(name)
+        if i is None:
+            return None
+        return chr(ord('A') + i)
+
+    delivery_col = col_letter("delivery_status")
+
+    updates = []
+
+    if delivery_col:
+        updates.append({
+            "range": f"{sheet_name}!{delivery_col}{row}",
+            "values": [["BOUNCED"]],
+        })
 
     body = {"valueInputOption": "USER_ENTERED", "data": updates}
 
@@ -192,10 +313,8 @@ def update_bounce(row, spreadsheet_id=None, sheet_name="CONTACTS"):
         body=body
     ).execute()
 
-def update_delivery_status(row, status, spreadsheet_id=None, sheet_name="CONTACTS"):
 
-    from dotenv import load_dotenv
-    import os
+def update_delivery_status(row, status, spreadsheet_id=None, sheet_name="CONTACTS"):
 
     if spreadsheet_id is None:
         spreadsheet_id = GOOGLE_SHEET_ID
@@ -203,9 +322,29 @@ def update_delivery_status(row, status, spreadsheet_id=None, sheet_name="CONTACT
     service = get_service()
     sheet = service.spreadsheets()
 
-    updates = [
-        {"range": f"{sheet_name}!I{row}", "values": [[status]]},
-    ]
+    resp = sheet.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A4:Z4"
+    ).execute()
+
+    headers = resp.get("values", [[]])[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def col_letter(name):
+        i = header_index.get(name)
+        if i is None:
+            return None
+        return chr(ord('A') + i)
+
+    delivery_col = col_letter("delivery_status")
+
+    updates = []
+
+    if delivery_col:
+        updates.append({
+            "range": f"{sheet_name}!{delivery_col}{row}",
+            "values": [[status]],
+        })
 
     body = {"valueInputOption": "USER_ENTERED", "data": updates}
 

@@ -12,10 +12,15 @@ from filelock import FileLock, Timeout
 
 from infra.sheet_client import get_contacts_rows, update_contacts_fields
 from config import GOOGLE_SHEET_ID
+from core.logger import get_logger
+
+logger = get_logger("spontaneous", "spontaneous.log")
 
 
 API_BASE = os.getenv("QJOE_API_BASE", "http://localhost:8000")
 DRY_RUN = os.getenv("DRY_RUN", "0") == "1"
+print("DEBUG DRY_RUN ENV =", os.getenv("DRY_RUN"))
+print("DEBUG DRY_RUN BOOL =", DRY_RUN)
 
 def main():
     contacts = get_contacts_rows()  # doit renvoyer liste dict: row, company, email, first_name, desk, status
@@ -29,7 +34,7 @@ def main():
         row = c["row"]
         status = c.get("status") or ""
 
-        if status in ("DONE", "DONE_GREEN", "ready", "ERROR"):
+        if status in ("ready", "ERROR"):
             continue
 
         company = c.get("company") or ""
@@ -61,12 +66,15 @@ def main():
             timeout=60,
         )
         gen.raise_for_status()
+        print("DEBUG API RESPONSE =", gen.json())
         g = gen.json()["generation"]
-
         cv_local_path = g["artifacts"]["cv_pdf_path"]
         email_subject = g["email"]["subject"]
         email_body = g["email"]["body"]
-
+        
+        print("DEBUG DRY_RUN =", DRY_RUN)
+        print("DEBUG CV PATH =", cv_local_path)
+       
         gmail_link = ""
         cv_link = ""
 
