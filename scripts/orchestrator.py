@@ -3,6 +3,7 @@ from pathlib import Path
 import time
 import traceback
 from cleanup_artifacts import *
+import re
 
 # add project root to python path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -142,6 +143,15 @@ def main():
                 job_json["language"] = job.get("language", "EN")
                 job_json["company"] = job.get("company") or job_json.get("company")
                 contact_email = job_json.get("contact_email")
+                #is_email_application = bool(contact_email)
+                valid_email = (
+                    contact_email
+                    and re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", contact_email)
+                )
+
+                if not valid_email:
+                    contact_email = None
+
                 is_email_application = bool(contact_email)
 
                 gen_response = retry_request(
