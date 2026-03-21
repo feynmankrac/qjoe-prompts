@@ -37,7 +37,7 @@ def map_template(job_json: Dict) -> Dict:
             "template_file": TEMPLATE_MAPPING["MARKET_RISK"],
         }
 
-    if role_family == "STRUCTURING":
+    if role_family in ("STRUCTURING", "PRICING"):
         return {
             "template_key": "STRUCTURING",
             "template_file": TEMPLATE_MAPPING["STRUCTURING"],

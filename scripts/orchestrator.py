@@ -4,6 +4,7 @@ import time
 import traceback
 from cleanup_artifacts import *
 import re
+import argparse
 
 # add project root to python path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -29,15 +30,30 @@ import os
 SPREADSHEET_ID = "10DSDAsJpXWmdpafk-MlG_FXA-5-idxnlzuWLY83G7Kk"
 API_URL = "http://localhost:8000/analyze_text"
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--row", type=int, default=None)
+args = parser.parse_args()
+force_row = args.row
+
 def main():
     memory = load_memory()
     logger.info("Batch started")
 
+#    jobs = get_jobs_to_process(
+ #       SPREADSHEET_ID,
+  #      status=PROCESS_ONLY_STATUS
+   # )
     jobs = get_jobs_to_process(
         SPREADSHEET_ID,
-        status=PROCESS_ONLY_STATUS
+        status=None if force_row else PROCESS_ONLY_STATUS,
+        force_row=force_row
     )
-    jobs = jobs[:MAX_ROWS_PER_RUN]
+#    jobs = jobs[:MAX_ROWS_PER_RUN]
+
+    if force_row:
+        jobs = [j for j in jobs if j["row_index"] == force_row]
+    else:
+        jobs = jobs[:MAX_ROWS_PER_RUN]
 
     if not jobs:
         print("No jobs to process")
@@ -116,6 +132,10 @@ def main():
 
             result = response.json()
             job_json = result.get("job_json")
+            print("DEBUG role_family:", job_json.get("role_family"))
+            print("DEBUG derivatives_pricing:", job_json.get("derivatives_pricing"))
+            print("DEBUG signals_for_fit:", job_json.get("signals_for_fit"))
+
 
             score = result.get("score")
             decision = result.get("decision")
@@ -129,8 +149,9 @@ def main():
                 print("Invalid API response")
                 continue
 
-            # 4️⃣ Handle decision
-            if decision == "GREEN":
+            # 4️⃣ Handle decision GREEN
+#            if decision == "GREEN":
+            if decision == "GREEN" or force_row:
 
                 #job_json = result.get("job_json")
                 #print(f"Row {row} | {decision} | score={score}")
@@ -140,9 +161,11 @@ def main():
                     continue
                 job_json["row_index"] = row
                 job_json["cv_title_override"] = job["raw_domain"]
-                job_json["language"] = job.get("language", "EN")
+               #job_json["language"] = job.get("language", "EN")
+                job_json["language"] = job.get("language") or "EN"
                 job_json["company"] = job.get("company") or job_json.get("company")
                 contact_email = job_json.get("contact_email")
+               # print("DEBUG CONTACT EMAIL:", repr(contact_email))
                 #is_email_application = bool(contact_email)
                 valid_email = (
                     contact_email
@@ -154,22 +177,30 @@ def main():
 
                 is_email_application = bool(contact_email)
 
+                print("DEBUG JOB KEYS:", job.keys())                
+                cv_template = job.get("CV_template")
+                print("DEBUG CV TEMPLATE:", cv_template)
+
                 gen_response = retry_request(
                     lambda: requests.post(
                         "http://localhost:8000/generate_application",
                         json={
                             "job_json": job_json,
-                            "email_application": is_email_application
+                            "email_application": is_email_application,
+                            "force_generate": bool(force_row),
+                            "cv_template": cv_template
                         },
                         headers=headers,
                         timeout=30
                     )
                 )
+ #  		print("DEBUG CV TEMPLATE:", cv_template)
 
                 gen_response.raise_for_status()
 
                 if gen_response.status_code == 200:
                     gen_result = gen_response.json()
+                   # print("DEBUG GENERATION:", gen_result)
 
                     cv_local_path = gen_result["generation"]["artifacts"]["cv_pdf_path"]
                     email_subject = gen_result["generation"]["email"]["subject"]
@@ -178,6 +209,7 @@ def main():
                     ldm_local_path = None
                     if not is_email_application:
                         ldm_local_path = gen_result["generation"]["artifacts"]["ldm_pdf_path"]
+                    #    print("DEBUG LDM PATH:", ldm_local_path)
 
                     if email_subject:
                         print("EMAIL SUBJECT:", email_subject)
@@ -225,8 +257,8 @@ def main():
                     #cv_name = f'=HYPERLINK("{drive_link_cv}";"{cv_file}")'
                     #ldm_name = f'=HYPERLINK("{drive_link_ldm}";"{ldm_file}")'
 
-                    status = "DONE_GREEN"
-
+                   # status = "DONE_GREEN"
+                    status = "Exception" if force_row else "DONE_GREEN"
                     # Clean local files
                     if os.path.exists(cv_local_path):
                         os.remove(cv_local_path)

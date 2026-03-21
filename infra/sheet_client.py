@@ -63,8 +63,8 @@ def get_new_jobs(spreadsheet_id, sheet_name="2026"):
 
     return jobs
 
-
-def get_jobs_to_process(spreadsheet_id, status="NEW"):
+def get_jobs_to_process(spreadsheet_id, status="NEW", force_row=None):
+#def get_jobs_to_process(spreadsheet_id, status="NEW"):
     service = get_service()
     sheet = service.spreadsheets()
 
@@ -96,11 +96,11 @@ def get_jobs_to_process(spreadsheet_id, status="NEW"):
         raw_text = get(row, "RAW_TEXT")
         postule = get(row, "Apply").strip().upper()
         engine_status = get(row, "STATUS")
+        cv_template = get(row, "CV_template")
 
-#        print("DEBUG:", row_number, postule, poste, engine_status)
-
-        if postule == "NON" and poste and not engine_status:
-
+        if force_row:
+            if row_number != force_row:
+                continue
 
             jobs.append({
                 "row_index": row_number,
@@ -108,9 +108,35 @@ def get_jobs_to_process(spreadsheet_id, status="NEW"):
                 "url": url,
                 "raw_domain": poste,
                 "language": language,
-                "raw_text": raw_text
+                "raw_text": raw_text,
+                "CV_template": cv_template
+            })
+            continue
+
+        if postule == "NON" and poste and not engine_status:
+            jobs.append({
+                "row_index": row_number,
+                "company": company,
+                "url": url,
+                "raw_domain": poste,
+                "language": language,
+                "raw_text": raw_text,
+                "CV_template": cv_template
             })
 
+#        print("DEBUG:", row_number, postule, poste, engine_status)
+
+#        if postule == "NON" and poste and not engine_status:
+#
+
+ #           jobs.append({
+ #               "row_index": row_number,
+ #               "company": company,
+ #               "url": url,
+ #               "raw_domain": poste,
+ #               "language": language,
+ #               "raw_text": raw_text
+ #           })
     print(f"Found {len(jobs)} jobs to process")
 
     return jobs
@@ -186,7 +212,7 @@ def get_contacts_rows():
 
     resp = sheet.values().get(
         spreadsheetId=spreadsheet_id,
-        range=f"{sheet_name}!A4:F"
+        range=f"{sheet_name}!A4:Z"
     ).execute()
 
     values = resp.get("values", [])
@@ -209,6 +235,7 @@ def get_contacts_rows():
         desk = get(v, "desk")
         language = get(v, "language") or "EN"
         status = get(v, "status")
+        group_id = get(v, "group_id")
 
         out.append({
             "row": row_index,
@@ -218,6 +245,7 @@ def get_contacts_rows():
             "desk": desk,
             "language": language,
             "status": status,
+            "group_id": group_id,
         })
 
         row_index += 1

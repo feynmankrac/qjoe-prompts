@@ -31,6 +31,7 @@ def generate_email_body(job_json: dict, score_result: dict) -> str:
 
     role = job_json.get("role_title") or job_json.get("cv_title_override") or "ce poste"
     team = job_json.get("team") or "votre équipe"
+    company = job_json.get("company", "")
 
     base_template = select_template(job_json)
 
@@ -48,7 +49,7 @@ def generate_email_body(job_json: dict, score_result: dict) -> str:
 
         body = f"""Bonjour,
 
-Je vous adresse ma candidature pour un poste en {role} au sein du desk {team.replace(" desk","").title()}.
+Je vous adresse ma candidature pour un poste en {role} chez {company}, au sein du desk {team.replace(" desk","").title()}.
 
 Je suis particulièrement motivé par l’environnement de marché et par {motivation}.
 
@@ -63,7 +64,7 @@ Ely Henry
     # version EN
     body = f"""Hello,
 
-Please find my application for the {role} position within the {team}.
+Please find my application for the {role} position at {company} within the {team}.
 
 I am particularly motivated by trading environments and by {motivation}.
 

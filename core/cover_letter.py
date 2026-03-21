@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import subprocess
+import time
 
 ARTIFACTS_DIR = Path(__file__).resolve().parent.parent / "artifacts" / "cover_letters"
 # ===== CONSTANTES GLOBALES =====
@@ -61,22 +62,77 @@ def escape_latex(text: str) -> str:
     return text
 
 def build_core_mission(key_missions, language):
-
     if not key_missions:
-        if language == "FR":
-            return "l’analyse quantitative et le développement d’outils appliqués aux marchés financiers"
-        else:
-            return "quantitative analysis and development of tools applied to financial markets"
+        return (
+            "la modélisation et la valorisation de produits dérivés"
+            if language == "FR"
+            else "the modelling and pricing of derivative products"
+        )
 
-    mission = key_missions[0].strip()
+    blacklist_starts = [
+        "vous recherchez",
+        "nous recherchons",
+        "rejoindre",
+        "crédit agricole cib",
+        "cacib",
+        "localisation du poste",
+        "ce stage de",
+        "cette offre",
+        "vous êtes",
+    ]
 
-    if mission:
+    priority_keywords = [
+        "recherche",
+        "conception",
+        "implémentation",
+        "calibration",
+        "diagnostic",
+        "application",
+        "évaluation",
+        "développer",
+        "calibrer",
+        "appliquer",
+        "modèle",
+        "pricing",
+        "dérivés",
+        "monte carlo",
+        "pde",
+    ]
+
+    cleaned = []
+    for mission in key_missions:
+        raw = " ".join(mission.strip().split())
+        low = raw.lower()
+
+        if len(raw) < 20:
+            continue
+        if any(low.startswith(x) for x in blacklist_starts):
+            continue
+        if "banque de financement" in low:
+            continue
+        if "acteur européen majeur" in low:
+            continue
+        if "opportunités en alternance" in low:
+            continue
+
+        cleaned.append(raw)
+
+    for mission in cleaned:
+        low = mission.lower()
+        if any(k in low for k in priority_keywords):
+            mission = mission[0].lower() + mission[1:]
+            return mission.rstrip(" .,:;–—-")
+
+    if cleaned:
+        mission = cleaned[0]
         mission = mission[0].lower() + mission[1:]
+        return mission.rstrip(" .,:;–—-")
 
-    # enlever ponctuation finale parasite (.,;:—- etc.)
-    mission = mission.rstrip().rstrip(" .,:;–—-")
-
-    return mission
+    return (
+        "la modélisation et la valorisation de produits dérivés"
+        if language == "FR"
+        else "the modelling and pricing of derivative products"
+    )
 
 def map_top_reason(top_reasons):
     if not top_reasons:
@@ -152,12 +208,15 @@ def compile_tex_to_pdf(tex_path: Path) -> Path:
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        check=False
     )
-
-    if result.returncode != 0:
-        raise RuntimeError(f"LaTeX compilation failed:\n{result.stderr.decode()}")
-
+    time.sleep(0.2)
     pdf_path = tex_path.with_suffix(".pdf")
+
+   # print("DEBUG EXPECTED PDF:", pdf_path)
+   # print("DEBUG PDF EXISTS:", pdf_path.exists())
+    if not pdf_path.exists():
+        raise RuntimeError(f"LaTeX compilation failed:\n{result.stderr.decode()}")
 
     # Nettoyage des fichiers auxiliaires
     for ext in [".aux", ".log", ".out"]:
@@ -175,10 +234,6 @@ def build_cover_letter_filename(base_template: str, score: dict, language: str) 
     return f"{prefix}_{score_value}_{base_template}.pdf"
 
 def get_language(job) -> str:
-    """
-    Returns 'FR' or 'EN' based on manual Sheet input.
-    Default = EN
-    """
     lang = job.get("language", "EN")
 
     if lang not in ["FR", "EN"]:

@@ -21,6 +21,7 @@ class GmailDraftRequest(BaseModel):
     subject: str
     body: str
     attachment_path: Optional[str] = None
+    bcc_emails: list[str] = []
 
 class SpontaneousRequest(BaseModel):
     company: str
@@ -37,7 +38,8 @@ API_TOKEN = os.getenv("QJOE_API_TOKEN")
 class JobJSONRequest(BaseModel):
     job_json: dict
     email_application: bool = False
-
+    force_generate: bool = False
+    cv_template: Optional[str] = None
 
 class JobTextRequest(BaseModel):
     job_text: str
@@ -85,13 +87,19 @@ def generate_application(request: JobJSONRequest, x_api_key: str = Header(None))
     verify_token(x_api_key)
 
     analysis = run_analysis(request.job_json)
-    if analysis.get("decision") != "GREEN":
+    if analysis.get("decision") != "GREEN" and not request.force_generate:
         raise HTTPException(status_code=400, detail="Cannot generate application: decision is not GREEN")
 
     job_json = request.job_json
     email_application = request.email_application
+    cv_template = request.cv_template
 
-    generation = run_generate_application(job_json, email_application=email_application)
+    generation = run_generate_application(
+        job_json,
+        email_application=email_application,
+        cv_template=cv_template
+    )
+#    generation = run_generate_application(job_json, email_application=email_application)
     return {"analysis": analysis, "generation": generation}
 
 
@@ -127,10 +135,11 @@ def create_gmail_draft_endpoint(req: GmailDraftRequest):
     from_email = os.getenv("GMAIL_FROM_EMAIL")  # optionnel
 
     draft = create_gmail_draft(
-    to_email=req.to_email,
-    subject=req.subject,
-    body=req.body,
-    attachment_path=req.attachment_path,
+        to_email=req.to_email,
+        bcc_emails=req.bcc_emails,
+        subject=req.subject,
+        body=req.body,
+        attachment_path=req.attachment_path,
         from_email=from_email,
         credentials_path=credentials_path,
         token_path=token_path,
@@ -193,3 +202,19 @@ def run_spontaneous(background_tasks: BackgroundTasks, x_api_key: str = Header(N
     background_tasks.add_task(run)
 
     return {"status": "spontaneous batch started"}
+
+from fastapi import Request
+
+@app.post("/run_override")
+async def run_override(request: Request):
+    data = await request.json()
+    row = data.get("row")
+
+    import subprocess
+
+    subprocess.Popen(
+        ["python3", "scripts/orchestrator.py", "--row", str(row)],
+        cwd="/root/qjoe-prompts"
+    )
+
+    return {"status": "override_started", "row": row}

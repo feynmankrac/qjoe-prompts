@@ -24,11 +24,18 @@ def create_gmail_draft(
     credentials_path: str,
     token_path: str,
     attachment_path: Optional[str] = None,
+    bcc_emails: Optional[list[str]] = None,
 ) -> dict:
     svc = get_gmail_service(credentials_path, token_path)
 
+    if bcc_emails is None:
+        bcc_emails = []
+
     msg = EmailMessage()
     msg["To"] = to_email
+    if bcc_emails:
+        msg["Bcc"] = ", ".join(bcc_emails)
+
     msg["Subject"] = subject
     if from_email:
         msg["From"] = from_email
@@ -56,6 +63,7 @@ def create_gmail_draft(
 
     print("TO:", to_email)
     print("SUBJECT:", subject)
+    print("BCC:", bcc_emails)
     print("BODY:", body[:100])
     print("ATTACHMENT:", attachment_path)
 

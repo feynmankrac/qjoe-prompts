@@ -20,6 +20,7 @@ from core.cover_letter import (
     build_cover_letter_filename
 )
 from core.email_generator import build_email_subject, generate_email_body
+from typing import Optional
 
 # ======================
 # TITLE BUILDER
@@ -111,7 +112,10 @@ def run_analysis(job_json: dict) -> dict:
 # GENERATE CV + PDF
 # ======================
 
-def run_generate_application(job_json: dict, email_application: bool = False) -> dict:
+def run_generate_application(job_json: dict, email_application: bool = False, cv_template: Optional[str] = None) -> dict:
+#def run_generate_application(job_json: dict, email_application: bool = False) -> dict:
+
+   # print("DEBUG email_application flag:", email_application)
 
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -140,8 +144,16 @@ def run_generate_application(job_json: dict, email_application: bool = False) ->
     # ======================= CV GENERATION ======================
     # ============================================================
 
-    template_result = map_template(job_json)
-    template_path = Path("templates") / template_result["template_file"]
+   # template_result = map_template(job_json)
+   # template_path = Path("templates") / template_result["template_file"]
+    if cv_template:
+        template_file = f"cv_{cv_template}.tex"
+        template_result = {"template_file": template_file}
+    else:
+        template_result = map_template(job_json)
+
+    template_path = Path("templates") / template_result["template_file"] 
+    print("TEMPLATE SELECTED:", template_result)
 
     cv_title = job_json.get("cv_title_override") or build_cv_title(job_json)
 
@@ -163,7 +175,11 @@ def run_generate_application(job_json: dict, email_application: bool = False) ->
 
     if compile_result_cv.get("pdf_path"):
         tmp_pdf = Path(compile_result_cv["pdf_path"])
-        final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"
+        if email_application:
+            final_cv_pdf = artifacts_dir / "Ely_Henry_CV.pdf"
+        else:
+            final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"      
+ #final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"
 
         if tmp_pdf.exists():
             tmp_pdf.replace(final_cv_pdf)
@@ -185,7 +201,7 @@ def run_generate_application(job_json: dict, email_application: bool = False) ->
     # ============================================================
 
     language = job_json.get("language", "EN")
-    print("LANGUAGE DETECTED:", language)
+   # print("LANGUAGE DETECTED:", language)
 
     score_dict = {
         "score_0_100": score_result.get("score_0_100", 0),
@@ -193,19 +209,33 @@ def run_generate_application(job_json: dict, email_application: bool = False) ->
     }
 
     ldm_tex_content = generate_cover_letter_tex(job_json, score_dict)
+   # print("DEBUG LDM TEX:", ldm_tex_content[:200] if ldm_tex_content else None)
 
-    ldm_tex_path = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.tex"
+    prefix = "ldm" if language == "FR" else "cover"
+
+    ldm_tex_path = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.tex"
+    #ldm_tex_path = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.tex"
     ldm_tex_path.write_text(ldm_tex_content, encoding="utf-8")
 
     ldm_pdf_path = None
 
     try:
         compiled_ldm_pdf = compile_tex_to_pdf(ldm_tex_path)
-        final_ldm_pdf = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.pdf"
+        final_ldm_pdf = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.pdf"   
+ # final_ldm_pdf = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.pdf"
+    #    print("DEBUG compiled_ldm_pdf:", compiled_ldm_pdf)
+     #   print("DEBUG compiled_ldm_pdf exists:", compiled_ldm_pdf.exists())
+      #  print("DEBUG final_ldm_pdf:", final_ldm_pdf)
+       # print("DEBUG same path:", compiled_ldm_pdf == final_ldm_pdf)
+
         if compiled_ldm_pdf.exists():
             compiled_ldm_pdf.replace(final_ldm_pdf)
-            ldm_pdf_path = str(final_ldm_pdf)
-
+            print("DEBUG replace done")
+            ldm_pdf_path = str(compiled_ldm_pdf)
+            print("DEBUG ldm_pdf_path set to:", ldm_pdf_path)
+        else:
+            print("DEBUG compiled_ldm_pdf does not exist inside try")
+    
     except Exception as e:
         print("LDM compilation error:", str(e))
 

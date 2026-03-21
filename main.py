@@ -229,3 +229,32 @@ if __name__ == "__main__":
     main()
 
    
+
+@app.post("/run_batch")
+def run_batch():
+
+    import subprocess
+
+    subprocess.Popen(
+        ["python3", "scripts/orchestrator.py"],
+        cwd="/root/qjoe-prompts"
+    )
+
+    return {"status": "batch_started"}
+
+
+from fastapi import Request
+
+@app.post("/run_override")
+async def run_override(request: Request):
+    data = await request.json()
+    row = data.get("row")
+
+    import subprocess
+
+    subprocess.Popen(
+        ["python3", "scripts/orchestrator.py", "--row", str(row)],
+        cwd="/root/qjoe-prompts"
+    )
+
+    return {"status": "override_started", "row": row}

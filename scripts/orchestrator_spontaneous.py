@@ -25,29 +25,55 @@ print("DEBUG DRY_RUN BOOL =", DRY_RUN)
 def main():
     contacts = get_contacts_rows()  # doit renvoyer liste dict: row, company, email, first_name, desk, status
 
+    groups = {}
+
+    for c in contacts:
+        gid = c.get("group_id") or "DEFAULT"
+        groups.setdefault(gid, []).append(c)
+
     headers = {}
     token = os.getenv("QJOE_API_TOKEN")
     if token:
         headers["x-api-key"] = token
 
-    for c in contacts:
+    #for c in contacts:
+    for group_id, group_contacts in groups.items():
+        eligible = [c for c in group_contacts if (c.get("status") or "") not in ("ready", "ERROR")]
+
+        if not eligible:
+            continue
+
+        selected = eligible[:7]
+        
+        emails = [c.get("email") for c in selected if c.get("email")]
+
+        to_email = os.getenv("GMAIL_FROM_EMAIL") or os.getenv("GMAIL_SENDER")
+       # to_email = os.getenv("GMAIL_SENDER")
+       # to_email = emails[0]
+        bcc_emails = emails
+
+        c = selected[0]
+ 
         row = c["row"]
         status = c.get("status") or ""
 
-        if status in ("ready", "ERROR"):
-            continue
+ #       if status in ("ready", "ERROR"):
+  #          continue
 
         company = c.get("company") or ""
-        to_email = c.get("email") or ""
-        first_name = c.get("first_name")
+        contact_email = c.get("email") or ""
+       # to_email = c.get("email") or ""
+       # first_name = c.get("first_name")
+        first_name = None
         desk = c.get("desk") or ""
         language = c.get("language") or "EN"
+        group_id = c.get("group_id") or ""
 
-        if not to_email:
+        if not contact_email:
             update_contacts_fields(row, "SKIP_NO_EMAIL", "", "")
             continue
 
-        if "@" not in to_email:
+        if "@" not in contact_email:
             update_contacts_fields(row, "SKIP_INVALID_EMAIL", "", "")
             continue
 
@@ -84,6 +110,7 @@ def main():
                 f"{API_BASE}/create_gmail_draft",
                 json={
                     "to_email": to_email,
+                    "bcc_emails": bcc_emails,
                     "subject": email_subject,
                     "body": email_body,
                     "attachment_path": cv_local_path
@@ -100,7 +127,9 @@ def main():
         # write sheet
         cv_cell = ""
 
-        update_contacts_fields(row, "ready", cv_cell, gmail_link)
+        for contact in selected:
+            update_contacts_fields(contact["row"], "ready", cv_cell, gmail_link)
+       # update_contacts_fields(row, "ready", cv_cell, gmail_link)
 
         # cleanup local
         if cv_local_path and os.path.exists(cv_local_path):
