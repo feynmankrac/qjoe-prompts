@@ -32,15 +32,8 @@ def _load_creds(
 
     if creds and creds.valid:
         return creds
-
-    flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
-    creds = flow.run_local_server(port=0)
-
-    os.makedirs(os.path.dirname(token_path), exist_ok=True)
-    with open(token_path, "w", encoding="utf-8") as f:
-        f.write(creds.to_json())
-
-    return creds
+#    creds = flow.run_local_server(port=0)
+    raise Exception("Gmail token missing. Run setup manually.")
 
 
 def get_gmail_service(

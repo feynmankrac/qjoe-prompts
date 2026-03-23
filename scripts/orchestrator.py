@@ -187,7 +187,8 @@ def main():
                         json={
                             "job_json": job_json,
                             "email_application": is_email_application,
-                            "force_generate": bool(force_row),
+#                            "force_generate": bool(force_row),
+                            "force_generate": True,
                             "cv_template": cv_template
                         },
                         headers=headers,
@@ -203,6 +204,9 @@ def main():
                    # print("DEBUG GENERATION:", gen_result)
 
                     cv_local_path = gen_result["generation"]["artifacts"]["cv_pdf_path"]
+                    if not cv_local_path:
+                        print("CV path is None → skip upload")
+                        continue
                     email_subject = gen_result["generation"]["email"]["subject"]
                     email_body = gen_result["generation"]["email"]["body"]
 

@@ -170,6 +170,8 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
     )
 
     compile_result_cv = compile_latex(str(cv_tex_path))
+    if not compile_result_cv.get("success"):
+        print("CV LATEX ERROR:", compile_result_cv.get("error"))
 
     cv_pdf_path = None
 

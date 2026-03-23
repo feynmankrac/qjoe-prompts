@@ -1,5 +1,6 @@
 # core/gmail_draft.py
 from __future__ import annotations
+
 from email.mime.base import MIMEBase
 from email import encoders
 
@@ -41,6 +42,11 @@ def create_gmail_draft(
         msg["From"] = from_email
     msg.set_content(body)
     if attachment_path:
+        import os
+
+        if not os.path.exists(attachment_path):
+            raise Exception(f"Attachment not found: {attachment_path}")
+
         with open(attachment_path, "rb") as f:
             part = MIMEBase("application", "octet-stream")
             part.set_payload(f.read())

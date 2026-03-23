@@ -130,8 +130,11 @@ def analyze_batch(request: BatchTextRequest, x_api_key: str = Header(None)):
 
 @app.post("/create_gmail_draft")
 def create_gmail_draft_endpoint(req: GmailDraftRequest):
-    credentials_path = os.getenv("GMAIL_OAUTH_CREDENTIALS", "secrets/gmail_oauth_client.json")
-    token_path = os.getenv("GMAIL_OAUTH_TOKEN", "secrets/gmail_token.json")
+   # credentials_path = os.getenv("GMAIL_OAUTH_CREDENTIALS", "secrets/client_secret.json")
+   # credentials_path = os.getenv("GMAIL_OAUTH_CREDENTIALS", "secrets/gmail_oauth_client.json")
+   # token_path = os.getenv("GMAIL_OAUTH_TOKEN", "secrets/gmail_token.json")
+    credentials_path="/root/qjoe-prompts/secrets/gmail_oauth_client.json"
+    token_path="/root/qjoe-prompts/secrets/gmail_token.json"
     from_email = os.getenv("GMAIL_FROM_EMAIL")  # optionnel
 
     draft = create_gmail_draft(
@@ -174,7 +177,7 @@ def run_batch(background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
         try:
             with lock:
                 subprocess.run(
-                    ["python", "scripts/orchestrator.py"],
+                    ["/root/qjoe-prompts/venv/bin/python", "scripts/orchestrator.py"],                
                     cwd="/root/qjoe-prompts"
                 )
 
@@ -196,8 +199,9 @@ def run_spontaneous(background_tasks: BackgroundTasks, x_api_key: str = Header(N
         subprocess.run(
             ["/root/qjoe-prompts/venv/bin/python", "scripts/orchestrator_spontaneous.py"],
             cwd="/root/qjoe-prompts",
-            env={**os.environ}
+#            env={**os.environ}
         )
+#["python", "scripts/orchestrator.py"],
 
     background_tasks.add_task(run)
 
@@ -213,7 +217,8 @@ async def run_override(request: Request):
     import subprocess
 
     subprocess.Popen(
-        ["python3", "scripts/orchestrator.py", "--row", str(row)],
+        ["/root/qjoe-prompts/venv/bin/python", "scripts/orchestrator.py", "--row", str(row)],
+#        ["python3", "scripts/orchestrator.py", "--row", str(row)],
         cwd="/root/qjoe-prompts"
     )
 
