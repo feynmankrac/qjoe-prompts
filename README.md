@@ -2,155 +2,146 @@
 
 ## Overview
 
-QJOE is a deterministic system designed to optimize quantitative finance job applications.
+Deterministic system to filter, score, and generate applications for quant roles.
 
-It automates the full pipeline from job collection to application preparation, while enforcing strict rule-based decision making.
+No LLM in decision. No automation without validation. Full control.
 
-The system focuses on:
-- extracting factual information from job offers
-- scoring opportunities based on predefined criteria
-- generating tailored application materials
-
-⚠️ No application is ever sent automatically. Human validation is required.
+⚠️ No application is ever sent automatically. Human validation is mandatory.
 
 ---
+## System Architecture
+
+```mermaid
+flowchart LR
+
+%% ENTRY POINTS
+subgraph Entry Points
+    A1[orchestrator.py]
+    A2[orchestrator_spontaneous.py]
+    A3[api.py]
+end
+
+%% CORE PIPELINE
+subgraph Core Pipeline
+    B1[extract.py]
+    B2[normalize.py]
+    B3[gate.py]
+    B4[score.py]
+    B5[pipeline.py]
+end
+
+%% APPLICATION GENERATION
+subgraph Application Layer
+    C1[template_mapper.py]
+    C2[cover_letter.py]
+    C3[email_generator.py]
+    C4[patch_latex_cv.py]
+    C5[latex_compiler.py]
+end
+
+%% SUPPORT MODULES
+subgraph Support
+    D1[job_memory.py]
+    D2[logger.py]
+    D3[language_strategy.py]
+    D4[application_mode.py]
+end
+
+%% INFRA
+subgraph Infra
+    E1[gmail_client.py]
+    E2[sheet_client.py]
+    E3[drive_uploader.py]
+end
+
+%% FLOW
+A1 --> B5
+A2 --> B5
+A3 --> B5
+
+B5 --> B1
+B5 --> B2
+B5 --> B3
+B5 --> B4
+
+B5 --> C1
+B5 --> C2
+B5 --> C3
+B5 --> C4
+B5 --> C5
+
+B5 --> D1
+B5 --> D2
+B5 --> D3
+B5 --> D4
+
+C3 --> E1
+B5 --> E2
+C5 --> E3
+```
 
 ## Core Principles
 
-- Deterministic decision-making (no AI in scoring or filtering)
-- No hallucination: missing information is set to `null`
-- Human-in-the-loop at all times
-- Strict alignment with predefined criteria
-- Robustness over complexity
+- 100% deterministic pipeline  
+- No LLM in decision-making  
+- No hallucination (missing data → null)  
+- Human-in-the-loop mandatory  
+- Robustness over complexity  
 
 ---
 
 ## Pipeline
-COLLECT
-→ EXTRACT_JOB
-→ NORMALIZE_JOB
-→ GATE
-→ SCORE
-→ PREPARE_APPLICATION
-→ NOTIFY
-→ HUMAN_APPROVE
-→ TRACK
 
+COLLECT → EXTRACT → NORMALIZE → GATE → SCORE → GENERATE → VALIDATE → TRACK
 
 ---
 
-## Key Features
+## What It Does
 
-### Job Extraction
-
-- Converts raw job descriptions into structured JSON
-- Only explicit information is extracted
-- No inference or interpretation
-
----
-
-### Normalization
-
-- Maps extracted data into controlled categories
-- Standardizes fields such as:
-  - role type
-  - seniority
-  - quant intensity
-  - technical flags (pricing, risk, etc.)
+- Extracts structured data from job offers  
+- Filters out irrelevant roles (reporting-heavy, non-quant, etc.)  
+- Scores opportunities (0–100, deterministic)  
+- Generates CV + email automatically  
+- Prepares drafts (no auto-send)  
+- Tracks results for optimization  
 
 ---
 
-### Gating (Hard Filters)
+## Decision Rule
 
-Automatic rejection of roles that do not fit target criteria:
-- reporting-heavy roles
-- PhD-only positions
-- hardcore C++ roles
-- non-quant positions
+- Score ≥ 50 → GREEN  
+- Score < 50 → RED  
 
----
-
-### Scoring System
-
-- Fully deterministic scoring (0–100)
-- Based only on predefined rules
-
-Decision:
-- Score ≥ 50 → GREEN
-- Score < 50 → RED
-
-No intermediate or AI-based validation.
-
----
-
-### Application Generation
-
-- CV and email templates generated automatically
-- Based on role category (Risk, Pricing, Energy, etc.)
-- Fully standardized output
-
----
-
-### Email Drafting
-
-- Gmail draft creation
-- Optional batching via BCC for manual sending
-
----
-
-### Tracking
-
-The system stores:
-- extracted job data
-- normalized data
-- score and decision
-- application status
-
-This enables performance monitoring and future optimization.
+No override. No grey zone.
 
 ---
 
 ## Tech Stack
 
-- Python (FastAPI)
-- Google Sheets (data storage)
-- Gmail API (draft generation)
-- VPS deployment (optional)
+Python (FastAPI) • Google Sheets • Gmail API • VPS  
 
 ---
 
-## Current Status
+## Status
 
-- End-to-end pipeline operational
-- Deterministic scoring implemented
-- Application generation functional
-- Manual validation workflow in place
-
----
-
-## Roadmap
-
-- Job crawling integration
-- Application performance tracking
-- Improved batching system (BCC strategy)
-- Infrastructure optimization
+- End-to-end pipeline operational  
+- Deterministic scoring implemented  
+- Application generation functional  
+- Manual validation workflow active  
 
 ---
 
-## Motivation
+## Why QJOE
 
-Most job application tools rely heavily on AI, leading to inconsistent and non-transparent decisions.
+Most job application tools rely on AI, leading to inconsistent and opaque decisions.
 
-QJOE is built to ensure:
-- full control over decision logic
-- reproducibility
-- strict alignment with personal career goals
+QJOE ensures:
+- transparency  
+- reproducibility  
+- strategic control  
 
 ---
 
 ## Author
 
-Quantitative finance graduate with a focus on:
-- Market Risk
-- Quantitative Risk
-- Derivatives
+Quantitative Finance — Market Risk, Quant Risk, Derivatives
