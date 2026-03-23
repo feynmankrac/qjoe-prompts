@@ -13,6 +13,7 @@ from filelock import FileLock, Timeout
 from infra.sheet_client import get_contacts_rows, update_contacts_fields
 from config import GOOGLE_SHEET_ID
 from core.logger import get_logger
+from core.pipeline import run_generate_application
 
 logger = get_logger("spontaneous", "spontaneous.log")
 
@@ -92,7 +93,7 @@ def main():
             timeout=60,
         )
         gen.raise_for_status()
-        print("DEBUG API RESPONSE =", gen.json())
+       # print("DEBUG API RESPONSE =", gen.json())
         g = gen.json()["generation"]
         cv_local_path = g["artifacts"]["cv_pdf_path"]
         email_subject = g["email"]["subject"]

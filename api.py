@@ -8,6 +8,7 @@ from fastapi import BackgroundTasks
 from filelock import FileLock, Timeout
 import config
 
+#from core.pipeline import run_analysis
 from core.pipeline import run_analysis, run_generate_application
 from core.pipeline_text import run_analysis_from_text
 
