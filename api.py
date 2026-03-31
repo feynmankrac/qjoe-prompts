@@ -22,7 +22,7 @@ class GmailDraftRequest(BaseModel):
     subject: str
     body: str
     attachment_path: Optional[str] = None
-    bcc_emails: list[str] = []
+    #bcc_emails: list[str] = []
 
 class SpontaneousRequest(BaseModel):
     company: str
@@ -140,7 +140,7 @@ def create_gmail_draft_endpoint(req: GmailDraftRequest):
 
     draft = create_gmail_draft(
         to_email=req.to_email,
-        bcc_emails=req.bcc_emails,
+        #bcc_emails=req.bcc_emails,
         subject=req.subject,
         body=req.body,
         attachment_path=req.attachment_path,
@@ -224,3 +224,27 @@ async def run_override(request: Request):
     )
 
     return {"status": "override_started", "row": row}
+
+
+from fastapi import Request
+
+from fastapi import Request
+
+@app.post("/check-bounces")
+def check_bounces_route(request: Request):
+    print("NEW ENDPOINT VERSION")
+
+    import subprocess
+
+    result = subprocess.run(
+        ["/root/qjoe-prompts/venv/bin/python", "scripts/check_bounces.py"],
+        capture_output=True,
+        text=True,
+        cwd="/root/qjoe-prompts"
+    )
+
+    print("STDOUT:", result.stdout)
+    print("STDERR:", result.stderr)
+
+    return {"status": "ok"}
+    return {"status": "ok"}

@@ -22,6 +22,8 @@ from core.cover_letter import (
 from core.email_generator import build_email_subject, generate_email_body
 from typing import Optional
 
+from core.template_mapper import TEMPLATE_MAPPING
+
 # ======================
 # TITLE BUILDER
 # ======================
@@ -116,6 +118,8 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
 #def run_generate_application(job_json: dict, email_application: bool = False) -> dict:
 
    # print("DEBUG email_application flag:", email_application)
+    if cv_template:
+        job_json["cv_template"] = cv_template
 
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -147,8 +151,15 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
    # template_result = map_template(job_json)
    # template_path = Path("templates") / template_result["template_file"]
     if cv_template:
-        template_file = f"cv_{cv_template}.tex"
-        template_result = {"template_file": template_file}
+        #template_file = f"cv_{cv_template}.tex"
+        #template_result = {"template_file": template_file}
+        cv_template_key = cv_template.upper()
+        template_result = {
+            "template_key": cv_template,
+            "template_file": TEMPLATE_MAPPING.get(cv_template_key)
+        }
+        if not template_result["template_file"]:
+            raise ValueError(f"Invalid cv_template: {cv_template}")
     else:
         template_result = map_template(job_json)
 
@@ -174,13 +185,14 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
         print("CV LATEX ERROR:", compile_result_cv.get("error"))
 
     cv_pdf_path = None
-
+    company = _slug(job_json.get("company"))
     if compile_result_cv.get("pdf_path"):
         tmp_pdf = Path(compile_result_cv["pdf_path"])
         if email_application:
             final_cv_pdf = artifacts_dir / "Ely_Henry_CV.pdf"
         else:
-            final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"      
+            final_cv_pdf = artifacts_dir / f"{row_index}_Ely_Henry_CV_{company}_{score_value}.pdf"
+            #final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"      
  #final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"
 
         if tmp_pdf.exists():
@@ -210,12 +222,18 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
         "top_reasons": score_result.get("top_reasons", [])
     }
 
-    ldm_tex_content = generate_cover_letter_tex(job_json, score_dict)
+    ldm_tex_content = generate_cover_letter_tex(
+        job_json,
+        score_dict,
+        cv_template=cv_template
+    )
+    #_content = generate_cover_letter_tex(job_json, score_dict)
    # print("DEBUG LDM TEX:", ldm_tex_content[:200] if ldm_tex_content else None)
 
     prefix = "ldm" if language == "FR" else "cover"
 
-    ldm_tex_path = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.tex"
+    ldm_tex_path = artifacts_dir / f"{row_index}_Ely_Henry_{prefix}_{company}_{score_value}.tex"
+    #ldm_tex_path = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.tex"
     #ldm_tex_path = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.tex"
     ldm_tex_path.write_text(ldm_tex_content, encoding="utf-8")
 
@@ -223,7 +241,8 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
 
     try:
         compiled_ldm_pdf = compile_tex_to_pdf(ldm_tex_path)
-        final_ldm_pdf = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.pdf"   
+        final_ldm_pdf = artifacts_dir / f"{row_index}_Ely_Henry_{prefix}_{company}_{score_value}.pdf"
+        #final_ldm_pdf = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.pdf"   
  # final_ldm_pdf = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.pdf"
     #    print("DEBUG compiled_ldm_pdf:", compiled_ldm_pdf)
      #   print("DEBUG compiled_ldm_pdf exists:", compiled_ldm_pdf.exists())

@@ -147,7 +147,11 @@ def map_top_reason(top_reasons):
 
 
 def generate_cover_letter_tex(job, score):
-    base_template = select_template(job)
+    #base_template = select_template(job)
+    if cv_template:
+        base_template = cv_template.lower()
+    else:
+        base_template = select_template(job)
     language = get_language(job)
 
     template_filename = f"{base_template}_{language.lower()}.tex"

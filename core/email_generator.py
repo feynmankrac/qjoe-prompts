@@ -35,6 +35,15 @@ def generate_email_body(job_json: dict, score_result: dict) -> str:
 
     base_template = select_template(job_json)
 
+####
+    cv_template = job_json.get("cv_template")
+
+    if cv_template:
+        base_template = cv_template.lower()
+    else:
+        base_template = select_template(job_json)
+
+###
     # phrase motivation selon type de rôle
     if base_template == "risk":
         motivation = "les problématiques d’analyse des risques de marché et de couverture"
@@ -42,6 +51,8 @@ def generate_email_body(job_json: dict, score_result: dict) -> str:
         motivation = "les problématiques de pricing et d’analyse des risques sur produits dérivés"
     elif base_template == "fo_tools":
         motivation = "les environnements proches du trading et le développement d’outils pour le Front Office"
+    elif base_template == "energy_modeling":
+        motivation = "les problématiques de modélisation et de prévision des prix sur les marchés de l’énergie"
     else:
         motivation = "les problématiques quantitatives appliquées aux marchés"
 
@@ -66,7 +77,7 @@ Ely Henry
 
 Please find my application for the {role} position at {company} within the {team}.
 
-I am particularly motivated by trading environments and by {motivation}.
+I am particularly interested in {motivation}.
 
 I would be glad to contribute to the desk.
 
