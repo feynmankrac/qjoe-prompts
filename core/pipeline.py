@@ -24,6 +24,17 @@ from typing import Optional
 
 from core.template_mapper import TEMPLATE_MAPPING
 
+NORMALIZE_TEMPLATE = {
+    "ENERGY_TRADING": "ENERGY",
+    "MARKET_RISK": "MARKET_RISK",
+    "MODEL_VALIDATION": "MODEL_VALIDATION",
+    "TRADING": "TRADING",
+    "STRUCTURING": "STRUCTURING",
+    "PNL_VALUATION": "PNL_VALUATION",
+    "DATA_EXECUTION": "DATA_EXECUTION",
+    "ENERGY_MODELING": "ENERGY_MODELING",
+}
+
 # ======================
 # TITLE BUILDER
 # ======================
@@ -115,16 +126,11 @@ def run_analysis(job_json: dict) -> dict:
 # ======================
 
 def run_generate_application(job_json: dict, email_application: bool = False, cv_template: Optional[str] = None) -> dict:
-#def run_generate_application(job_json: dict, email_application: bool = False) -> dict:
-
-   # print("DEBUG email_application flag:", email_application)
-    if cv_template:
-        job_json["cv_template"] = cv_template
 
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    # ===== Recompute score (utile pour la lettre dynamique) =====
+    # ===== Recompute score =====
     score_result = compute_score(job_json)
     contact_email = job_json.get("contact_email")
 
@@ -134,36 +140,42 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
     else:
         email_subject = ""
         email_body = ""
+
     score_value = int(score_result.get("score_0_100") or 0)
 
-    # ===== Identifiants stables =====
+    # ===== Identifiants =====
     row_index = job_json.get("row_index", "X")
     base_template = select_template(job_json)
-
-    #print("ROLE TITLE IN JOB_JSON:", job_json.get("role_title"))
-    #print("CV TITLE OVERRIDE:", job_json.get("cv_title_override"))
-    #print("LANGUAGE IN JOB_JSON:", job_json.get("language"))
 
     # ============================================================
     # ======================= CV GENERATION ======================
     # ============================================================
 
-   # template_result = map_template(job_json)
-   # template_path = Path("templates") / template_result["template_file"]
     if cv_template:
-        #template_file = f"cv_{cv_template}.tex"
-        #template_result = {"template_file": template_file}
-        cv_template_key = cv_template.upper()
+        raw_key = cv_template.upper()
+        cv_template_key = NORMALIZE_TEMPLATE.get(raw_key)
+
+        print("DEBUG RAW TEMPLATE:", cv_template)
+        print("DEBUG NORMALIZED KEY:", cv_template_key)
+        print("DEBUG AVAILABLE KEYS:", TEMPLATE_MAPPING.keys())
+
+        if not cv_template_key:
+            raise ValueError(f"Unknown cv_template input: {cv_template}")
+
+        template_file = TEMPLATE_MAPPING.get(cv_template_key)
+
+        if not template_file:
+            raise ValueError(f"Invalid normalized cv_template: {cv_template_key}")
+
         template_result = {
-            "template_key": cv_template,
-            "template_file": TEMPLATE_MAPPING.get(cv_template_key)
+            "template_key": cv_template_key,
+            "template_file": template_file
         }
-        if not template_result["template_file"]:
-            raise ValueError(f"Invalid cv_template: {cv_template}")
+
     else:
         template_result = map_template(job_json)
 
-    template_path = Path("templates") / template_result["template_file"] 
+    template_path = Path("templates") / template_result["template_file"]
     print("TEMPLATE SELECTED:", template_result)
 
     cv_title = job_json.get("cv_title_override") or build_cv_title(job_json)
@@ -186,14 +198,14 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
 
     cv_pdf_path = None
     company = _slug(job_json.get("company"))
+
     if compile_result_cv.get("pdf_path"):
         tmp_pdf = Path(compile_result_cv["pdf_path"])
+
         if email_application:
             final_cv_pdf = artifacts_dir / "Ely_Henry_CV.pdf"
         else:
             final_cv_pdf = artifacts_dir / f"{row_index}_Ely_Henry_CV_{company}_{score_value}.pdf"
-            #final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"      
- #final_cv_pdf = artifacts_dir / f"{row_index}_cv_{score_value}_{base_template}.pdf"
 
         if tmp_pdf.exists():
             tmp_pdf.replace(final_cv_pdf)
@@ -210,12 +222,12 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
                 "body": email_body
             }
         }
+
     # ============================================================
     # ====================== LDM GENERATION ======================
     # ============================================================
 
     language = job_json.get("language", "EN")
-   # print("LANGUAGE DETECTED:", language)
 
     score_dict = {
         "score_0_100": score_result.get("score_0_100", 0),
@@ -227,14 +239,10 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
         score_dict,
         cv_template=cv_template
     )
-    #_content = generate_cover_letter_tex(job_json, score_dict)
-   # print("DEBUG LDM TEX:", ldm_tex_content[:200] if ldm_tex_content else None)
 
     prefix = "ldm" if language == "FR" else "cover"
 
     ldm_tex_path = artifacts_dir / f"{row_index}_Ely_Henry_{prefix}_{company}_{score_value}.tex"
-    #ldm_tex_path = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.tex"
-    #ldm_tex_path = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.tex"
     ldm_tex_path.write_text(ldm_tex_content, encoding="utf-8")
 
     ldm_pdf_path = None
@@ -242,21 +250,11 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
     try:
         compiled_ldm_pdf = compile_tex_to_pdf(ldm_tex_path)
         final_ldm_pdf = artifacts_dir / f"{row_index}_Ely_Henry_{prefix}_{company}_{score_value}.pdf"
-        #final_ldm_pdf = artifacts_dir / f"{row_index}_{prefix}_{score_value}_{base_template}.pdf"   
- # final_ldm_pdf = artifacts_dir / f"{row_index}_ldm_{score_value}_{base_template}.pdf"
-    #    print("DEBUG compiled_ldm_pdf:", compiled_ldm_pdf)
-     #   print("DEBUG compiled_ldm_pdf exists:", compiled_ldm_pdf.exists())
-      #  print("DEBUG final_ldm_pdf:", final_ldm_pdf)
-       # print("DEBUG same path:", compiled_ldm_pdf == final_ldm_pdf)
 
         if compiled_ldm_pdf.exists():
             compiled_ldm_pdf.replace(final_ldm_pdf)
-            print("DEBUG replace done")
-            ldm_pdf_path = str(compiled_ldm_pdf)
-            print("DEBUG ldm_pdf_path set to:", ldm_pdf_path)
-        else:
-            print("DEBUG compiled_ldm_pdf does not exist inside try")
-    
+            ldm_pdf_path = str(final_ldm_pdf)
+
     except Exception as e:
         print("LDM compilation error:", str(e))
 

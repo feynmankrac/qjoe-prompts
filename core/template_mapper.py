@@ -9,6 +9,7 @@ TEMPLATE_MAPPING = {
     "STRUCTURING": "cv_structuring.tex",
     "PNL_VALUATION": "cv_pnl_valuation.tex",
     "DATA_EXECUTION": "cv_data_execution.tex",
+    "ENERGY_MODELING": "cv_energy_modeling.tex",
 }
 
 

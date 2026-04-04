@@ -7,6 +7,11 @@ from core.pipeline import patch_latex_cv, build_cv_title # si ton projet a ces f
 #from core.template_selector import map_template, select_template  # idem
 from core.pipeline import compile_latex
 
+EMAIL_SIGNATURE = {
+    "EN": "Best regards,\n\nEly Henry\n+33 6 16 70 29 16\nlinkedin.com/in/ely-henry/\ngithub.com/feynmankrac",
+    "FR": "Bien cordialement,\n\nEly Henry\n+33 6 16 70 29 16\nlinkedin.com/in/ely-henry/\ngithub.com/feynmankrac"
+}
+
 DESK_TEMPLATE_MAP = {
     "DATA_EXECUTION": "cv_data_execution.tex",
     "ENERGY_TRADING": "cv_energy_trading.tex",
@@ -15,6 +20,7 @@ DESK_TEMPLATE_MAP = {
     "PNL_VALUATION": "cv_pnl_valuation.tex",
     "STRUCTURING": "cv_structuring.tex",
     "TRADING": "cv_trading.tex",
+    "ENERGY_MODELING": "cv_energy_modeling.tex",
 }
 
 def desk_to_cv_title(desk: str) -> str:
@@ -26,13 +32,22 @@ def desk_to_cv_title(desk: str) -> str:
         "MODEL_VALIDATION": "Model Validation – Quantitative Finance",
         "STRUCTURING": "Derivatives Structuring",
         "PNL_VALUATION": "Derivatives Valuation",
-        "DATA_EXECUTION": "Quantitative Data Analysis"
+        "DATA_EXECUTION": "Quantitative Data Analysis",
+        "ENERGY_MODELING": "Quantitative Finance – Energy Markets",
     }
 
     return mapping.get(desk, desk.replace("_", " ").title())
 
+#def desk_to_human(desk: str) -> str:
+ #   return desk.replace("_", " ").title()
+
 def desk_to_human(desk: str) -> str:
-    return desk.replace("_", " ").title()
+
+    mapping = {
+        "ENERGY_MODELING": "Energy Forecasting",
+    }
+
+    return mapping.get(desk, desk.replace("_", " ").title())
 
 
 def build_spontaneous_email_subject(company: str, desk: str, language: str) -> str:
@@ -43,10 +58,16 @@ def build_spontaneous_email_subject(company: str, desk: str, language: str) -> s
 
 def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[str], language: str) -> str:
     name = first_name.strip() if first_name else ""
-    hello = f"Bonjour {name}," if (language or "EN").upper().startswith("FR") and name else \
-            ("Bonjour," if (language or "EN").upper().startswith("FR") else ("Hello " + name + "," if name else "Hello,"))
+    is_fr = (language or "EN").upper().startswith("FR")
 
-    if (language or "EN").upper().startswith("FR"):
+    hello = (
+        f"Bonjour {name}," if is_fr and name else
+        ("Bonjour," if is_fr else (f"Hello {name}," if name else "Hello,"))
+    )
+
+    signature = EMAIL_SIGNATURE["FR"] if is_fr else EMAIL_SIGNATURE["EN"]
+
+    if is_fr:
         return (
             f"{hello}\n\n"
             f"Je me permets de vous contacter pour une candidature spontanée "
@@ -54,8 +75,7 @@ def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[s
             f"Je suis diplômé d’un Master 2 en finance quantitative et je souhaite évoluer dans un environnement rigoureux "
             f"où la modélisation et les produits dérivés sont centraux.\n\n"
             f"Vous trouverez mon CV en pièce jointe. Je serais ravi d’échanger si mon profil correspond à vos besoins.\n\n"
-            f"Bien cordialement,\n"
-            f"Ely Henry\n"
+            f"{EMAIL_SIGNATURE['FR']}\n"
         )
 
     return (
@@ -64,8 +84,7 @@ def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[s
         f"I hold a Master’s degree (M2) in Quantitative Finance and I’m looking to join a rigorous environment "
         f"where modelling and derivatives are central.\n\n"
         f"Please find my CV attached. I would be happy to discuss if my profile matches your needs.\n\n"
-        f"Kind regards,\n"
-        f"Ely Henry\n"
+        f"{EMAIL_SIGNATURE['FR']}\n"
     )
 
 

@@ -65,4 +65,13 @@ def upload_to_drive(file_path: str) -> str:
         fields="id, webViewLink"
     ).execute()
 
-    return uploaded_file["webViewLink"]
+    link = uploaded_file["webViewLink"]
+
+    # DELETE LOCAL FILE (safe)
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print(f"DELETE FAILED: {file_path} → {e}")
+
+    return link
