@@ -62,3 +62,10 @@ OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.2"))
 
 # --- Lock ---
 LOCK_PATH = os.getenv("LOCK_PATH", "/tmp/qjoe.lock")
+
+# --- Storage mode ---
+SAVE_MODE = os.getenv("SAVE_MODE", "drive")  # "drive" ou "local"
+
+# --- Local download (VPS → machine perso) ---
+AUTO_DOWNLOAD = os.getenv("AUTO_DOWNLOAD", "0") == "1"
+LOCAL_DOWNLOAD_PATH = os.getenv("LOCAL_DOWNLOAD_PATH", "")

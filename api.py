@@ -248,3 +248,18 @@ def check_bounces_route(request: Request):
 
     return {"status": "ok"}
     return {"status": "ok"}
+
+
+@app.post("/run_followup")
+def run_followup(background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
+    if API_TOKEN and x_api_key != API_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    def run():
+        subprocess.run(
+            ["/root/qjoe-prompts/venv/bin/python", "scripts/orchestrator_followup.py"],
+            cwd="/root/qjoe-prompts",
+        )
+
+    background_tasks.add_task(run)
+    return {"status": "followup batch started"}

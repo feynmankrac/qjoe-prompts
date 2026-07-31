@@ -42,11 +42,10 @@ def desk_to_cv_title(desk: str) -> str:
  #   return desk.replace("_", " ").title()
 
 def desk_to_human(desk: str) -> str:
-
     mapping = {
-        "ENERGY_MODELING": "Energy Forecasting",
+        "ENERGY_TRADING": "Commodities",
+        "ENERGY_MODELING": "Commodities Modeling",
     }
-
     return mapping.get(desk, desk.replace("_", " ").title())
 
 
@@ -65,13 +64,11 @@ def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[s
         ("Bonjour," if is_fr else (f"Hello {name}," if name else "Hello,"))
     )
 
-    signature = EMAIL_SIGNATURE["FR"] if is_fr else EMAIL_SIGNATURE["EN"]
-
     if is_fr:
         return (
             f"{hello}\n\n"
             f"Je me permets de vous contacter pour une candidature spontanée "
-            f"au sein de vos activités de {desk.lower()}.\n\n"
+            f"au sein de vos activités liées aux {desk.lower()}.\n\n"
             f"Je suis diplômé d’un Master 2 en finance quantitative et je souhaite évoluer dans un environnement rigoureux "
             f"où la modélisation et les produits dérivés sont centraux.\n\n"
             f"Vous trouverez mon CV en pièce jointe. Je serais ravi d’échanger si mon profil correspond à vos besoins.\n\n"
@@ -84,9 +81,8 @@ def build_spontaneous_email_body(company: str, desk: str, first_name: Optional[s
         f"I hold a Master’s degree (M2) in Quantitative Finance and I’m looking to join a rigorous environment "
         f"where modelling and derivatives are central.\n\n"
         f"Please find my CV attached. I would be happy to discuss if my profile matches your needs.\n\n"
-        f"{EMAIL_SIGNATURE['FR']}\n"
+        f"{EMAIL_SIGNATURE['EN']}\n"
     )
-
 
 def desk_to_template(desk: str) -> str:
     if not desk:

@@ -127,6 +127,10 @@ def run_analysis(job_json: dict) -> dict:
 
 def run_generate_application(job_json: dict, email_application: bool = False, cv_template: Optional[str] = None) -> dict:
 
+    if cv_template:
+        normalized = NORMALIZE_TEMPLATE.get(cv_template.upper())
+        if normalized:
+            job_json["role_family"] = normalized
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
@@ -145,7 +149,8 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
 
     # ===== Identifiants =====
     row_index = job_json.get("row_index", "X")
-    base_template = select_template(job_json)
+    #base_template = select_template(job_json)
+    base_template = job_json.get("role_family")
 
     # ============================================================
     # ======================= CV GENERATION ======================
@@ -158,6 +163,7 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
         print("DEBUG RAW TEMPLATE:", cv_template)
         print("DEBUG NORMALIZED KEY:", cv_template_key)
         print("DEBUG AVAILABLE KEYS:", TEMPLATE_MAPPING.keys())
+        print("DEBUG FINAL ROLE_FAMILY:", job_json.get("role_family"))
 
         if not cv_template_key:
             raise ValueError(f"Unknown cv_template input: {cv_template}")
@@ -193,8 +199,10 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
     )
 
     compile_result_cv = compile_latex(str(cv_tex_path))
+    print("LATEX RESULT:", compile_result_cv)
     if not compile_result_cv.get("success"):
         print("CV LATEX ERROR:", compile_result_cv.get("error"))
+    
 
     cv_pdf_path = None
     company = _slug(job_json.get("company"))
@@ -234,6 +242,8 @@ def run_generate_application(job_json: dict, email_application: bool = False, cv
         "top_reasons": score_result.get("top_reasons", [])
     }
 
+    if cv_template:
+        job_json["template_override"] = NORMALIZE_TEMPLATE.get(cv_template.upper())
     ldm_tex_content = generate_cover_letter_tex(
         job_json,
         score_dict,

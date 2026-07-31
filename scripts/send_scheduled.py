@@ -102,28 +102,32 @@ def main():
                 logger.info(f"DRAFT LINK row {row} = {draft_link}")
 
                 print(f"READY TO SEND row {row}")
-                ok = send_draft(
+                send_result = send_draft(
                     draft_link=draft_link,
                     credentials_path=credentials_path,
                     token_path=token_path,
                 )
 
-                print(f"SEND RESULT row {row} = {ok}")
+                print(f"SEND RESULT row {row} = {send_result}")
 
-                logger.info(f"SEND RESULT row {row} = {ok}")
+                logger.info(f"SEND RESULT row {row} = {send_result}")
 
-                if ok:
+                if send_result["ok"]:
                     sent_count += 1
 
                     update_contacts_fields(row, "SENT", "", draft_link)
 
-                    update_contact_extra_fields(row, {
-                        "date_réelle": datetime.now(TZ).strftime("%d/%m/%Y %H:%M")
-                    })
-
-                    update_contact_extra_fields(row, {
+                    extra_fields = {
+                        "date_réelle": datetime.now(TZ).strftime("%d/%m/%Y %H:%M"),
                         "schedule": "",
-                    })
+                        "thread_id": send_result["thread_id"],
+                    }
+
+                    if (c.get("relance") or "").strip().upper() == "PROGRAMME":
+                        extra_fields["relance"] = "ENVOYE"
+                        extra_fields["followup_1_date"] = datetime.now(TZ).strftime("%d/%m/%Y %H:%M")
+
+                    update_contact_extra_fields(row, extra_fields)
                     update_delivery_status(row, "✅")
 
                     logger.info(f"SENT row {row}")

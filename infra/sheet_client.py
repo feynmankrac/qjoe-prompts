@@ -240,6 +240,11 @@ def get_contacts_rows():
         group_id = get(v, "group_id")
         draft_link = get(v, "draft_link")
         date_prévue = get(v, "date_prévue")
+        delivery_status = get(v, "delivery_status")
+        relance = get(v, "relance")
+        reponse = get(v, "réponse")
+        thread_id = get(v, "thread_id")
+        followup_1_date = get(v, "followup_1_date")
         out.append({
             "row": row_index,
             "company": company,
@@ -251,6 +256,11 @@ def get_contacts_rows():
             "group_id": group_id,
             "draft_link": draft_link,
             "date_prévue": date_prévue,
+            "delivery_status": delivery_status,
+            "relance": relance,
+            "réponse": reponse,
+            "thread_id": thread_id,
+            "followup_1_date": followup_1_date,
         })
 
         row_index += 1
@@ -470,3 +480,49 @@ def update_contact_extra_fields(row, fields: dict, spreadsheet_id=None, sheet_na
         spreadsheetId=spreadsheet_id,
         body=body
     ).execute()
+
+def batch_update_contact_fields(rows_updates: list[tuple[int, dict]], spreadsheet_id=None, sheet_name="CONTACTS"):
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    if spreadsheet_id is None:
+        spreadsheet_id = GOOGLE_SHEET_ID
+
+    resp = sheet.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A4:Z4"
+    ).execute()
+
+    headers = resp.get("values", [[]])[0]
+    header_index = {h: i for i, h in enumerate(headers)}
+
+    def col_letter(name):
+        i = header_index.get(name)
+        if i is None:
+            return None
+        return chr(ord('A') + i)
+
+    updates = []
+
+    for row, fields in rows_updates:
+        for field_name, value in fields.items():
+            col = col_letter(field_name)
+            if col:
+                updates.append({
+                    "range": f"{sheet_name}!{col}{row}",
+                    "values": [[value]]
+                })
+
+    if not updates:
+        return
+
+    body = {
+        "valueInputOption": "USER_ENTERED",
+        "data": updates
+    }
+
+    sheet.values().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body=body
+    ).execute()
+
